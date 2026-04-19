@@ -1,6 +1,13 @@
 import { Hono } from "hono"
+import { Effect, Either } from "effect"
+import * as Schema from "@effect/schema/Schema"
 
-import { appName } from "@carebid/shared"
+import {
+  CreateCareRequestInputSchema,
+  RequestRoomSnapshotSchema,
+  appName,
+  providerCategories,
+} from "@carebid/shared"
 
 export const createRouter = () => {
   const app = new Hono<{ Bindings: Env }>()
@@ -10,9 +17,43 @@ export const createRouter = () => {
   app.get("/api/requests", (c) =>
     c.json({
       items: [],
-      filters: ["specialist_consult", "imaging"],
+      filters: providerCategories,
     }),
   )
+
+  app.post("/api/requests/validate", async (c) => {
+    const response = await Effect.runPromise(
+      Effect.gen(function* () {
+        const body = yield* Effect.tryPromise(() => c.req.json())
+        const decoded = Schema.decodeUnknownEither(CreateCareRequestInputSchema)(body)
+
+        if (Either.isLeft(decoded)) {
+          return c.json(
+            {
+              ok: false,
+              error: "Invalid request payload",
+              issue: decoded.left,
+            },
+            400,
+          )
+        }
+
+        return c.json({ ok: true, item: decoded.right })
+      }),
+    )
+
+    return response
+  })
+
+  app.get("/api/requests/:requestId/room", async (c) => {
+    const requestId = c.req.param("requestId")
+    const room = c.env.REQUEST_ROOM_DO.get(c.env.REQUEST_ROOM_DO.idFromName(requestId))
+    const response = await room.fetch(`https://do.internal/snapshot?requestId=${requestId}`)
+    const json = await response.json()
+    const snapshot = Schema.decodeUnknownSync(RequestRoomSnapshotSchema)(json)
+
+    return c.json(snapshot)
+  })
 
   return app
 }

@@ -210,6 +210,20 @@ export const ErrorPayloadSchema = Schema.Struct({
   message: Schema.String,
 })
 
+export const RequestRoomSnapshotSchema = Schema.Struct({
+  requestId: Schema.String,
+  status: RequestStatusSchema,
+  connectedViewers: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+  leaderboard: Schema.Array(
+    Schema.Struct({
+      bidId: Schema.String,
+      amountCents: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+      availableDate: Schema.String,
+    }),
+  ),
+})
+export type RequestRoomSnapshot = typeof RequestRoomSnapshotSchema.Type
+
 export const RoomEventSchema = Schema.Struct({
   type: RoomEventTypeSchema,
   requestId: Schema.String,
