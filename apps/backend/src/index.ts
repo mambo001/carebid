@@ -1,5 +1,3 @@
-import { Hono } from "hono"
-
 import {
   AcceptBidInputSchema,
   BidInputSchema,
@@ -11,7 +9,7 @@ import {
 } from "@carebid/shared"
 import * as Schema from "@effect/schema/Schema"
 
-import { createRouter } from "./lib/router"
+import { createApp } from "./app"
 
 type RoomBid = {
   bidId: string
@@ -42,12 +40,19 @@ export class RequestRoomDurableObject {
   ) {}
 
   private async getRoomState(requestId: string): Promise<RoomState> {
+    return this.getRoomStateWithFallback(requestId, "open")
+  }
+
+  private async getRoomStateWithFallback(
+    requestId: string,
+    initialStatus: RoomState["status"],
+  ): Promise<RoomState> {
     const stored = await this.state.storage.get<RoomState>(roomStateKey)
 
     return (
       stored ?? {
         requestId,
-        status: "open",
+        status: initialStatus,
         awardedBidId: undefined,
         connectedViewers: 0,
         bids: [],
@@ -144,15 +149,37 @@ export class RequestRoomDurableObject {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
     const requestId = url.searchParams.get("requestId") ?? this.state.id.toString()
+    const statusParam = url.searchParams.get("status")
+    const initialStatus: RoomState["status"] =
+      statusParam === "draft" ||
+      statusParam === "open" ||
+      statusParam === "awarded" ||
+      statusParam === "expired"
+        ? statusParam
+        : "open"
 
     if (request.method === "GET" && url.pathname === "/connect") {
       return this.connectWebSocket(requestId)
     }
 
     if (request.method === "GET" && url.pathname === "/snapshot") {
-      const snapshot = this.createSnapshot(await this.getRoomState(requestId))
+      const snapshot = this.createSnapshot(await this.getRoomStateWithFallback(requestId, initialStatus))
 
       return Response.json(snapshot)
+    }
+
+    if (request.method === "POST" && url.pathname === "/status/sync") {
+      const roomState = await this.getRoomStateWithFallback(requestId, initialStatus)
+      const body = Schema.decodeUnknownSync(
+        Schema.Struct({
+          status: Schema.Literal("draft", "open", "awarded", "expired"),
+        }),
+      )(await request.json())
+
+      roomState.status = body.status
+      await this.persistAndBroadcast(roomState)
+
+      return Response.json(this.createSnapshot(roomState))
     }
 
     if (request.method === "POST" && url.pathname === "/bids/place") {
@@ -261,8 +288,4 @@ export class RequestRoomDurableObject {
   }
 }
 
-const app = new Hono<{ Bindings: Env }>()
-
-app.route("/", createRouter())
-
-export default app
+export default createApp()
