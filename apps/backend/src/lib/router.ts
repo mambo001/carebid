@@ -23,8 +23,7 @@ import {
   providerCategories,
 } from "@carebid/shared"
 
-import { getDemoSession, onboardPatient, onboardProvider, switchDemoRole } from "./demo-auth"
-import { createDemoRequest, demoRequests } from "./demo-data"
+import { getSession, listRequests, savePatient, saveProvider, saveRequest, switchRole } from "./store"
 
 export const createRouter = () => {
   const app = new Hono<{ Bindings: Env }>()
@@ -32,17 +31,24 @@ export const createRouter = () => {
   app.get("/health", (c) => c.json({ ok: true, app: appName, env: c.env.APP_NAME }))
 
   app.get("/api/session", (c) =>
-    c.json(
-      Schema.decodeUnknownSync(SessionResponseSchema)({
-        ok: true,
-        session: getDemoSession(),
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const session = yield* Effect.tryPromise(() => getSession(c.env))
+
+        return c.json(
+          Schema.decodeUnknownSync(SessionResponseSchema)({
+            ok: true,
+            session,
+          }),
+        )
       }),
     ),
   )
 
   app.post("/api/session/role", async (c) => {
     const body = await c.req.json()
-    const session = switchDemoRole(
+    const session = await switchRole(
+      c.env,
       Schema.decodeUnknownSync(
         Schema.Struct({
           role: Schema.optional(ViewerRoleSchema),
@@ -61,7 +67,7 @@ export const createRouter = () => {
   app.post("/api/onboarding/patient", async (c) => {
     const body = await c.req.json()
     const input = Schema.decodeUnknownSync(PatientOnboardingInputSchema)(body)
-    const result = onboardPatient(input)
+    const result = await savePatient(c.env, input)
 
     return c.json(
       Schema.decodeUnknownSync(PatientOnboardingResponseSchema)({
@@ -75,7 +81,7 @@ export const createRouter = () => {
   app.post("/api/onboarding/provider", async (c) => {
     const body = await c.req.json()
     const input = Schema.decodeUnknownSync(ProviderOnboardingInputSchema)(body)
-    const result = onboardProvider(input)
+    const result = await saveProvider(c.env, input)
 
     return c.json(
       Schema.decodeUnknownSync(ProviderOnboardingResponseSchema)({
@@ -86,14 +92,16 @@ export const createRouter = () => {
     )
   })
 
-  app.get("/api/requests", (c) =>
-    c.json(
+  app.get("/api/requests", async (c) => {
+    const items = await listRequests(c.env)
+
+    return c.json(
       Schema.decodeUnknownSync(RequestListResponseSchema)({
-        items: demoRequests,
+        items,
         filters: providerCategories,
       }),
-    ),
-  )
+    )
+  })
 
   app.post("/api/requests/validate", async (c) => {
     const response = await Effect.runPromise(
@@ -136,7 +144,7 @@ export const createRouter = () => {
           )
         }
 
-        const item = createDemoRequest(decoded.right)
+        const item = yield* Effect.tryPromise(() => saveRequest(c.env, decoded.right))
 
         return c.json(
           Schema.decodeUnknownSync(CreateCareRequestResponseSchema)({
