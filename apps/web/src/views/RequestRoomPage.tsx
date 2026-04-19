@@ -6,23 +6,20 @@ import {
   List,
   ListItem,
   ListItemText,
+  Skeleton,
   Stack,
   Typography,
 } from "@mui/material"
 import { useEffect } from "react"
 import { useParams } from "react-router-dom"
 
+import { useRoomSnapshotQuery } from "../lib/queries"
 import { useAppStore } from "../store/app-store"
-
-const leaderboard = [
-  { label: "Bid 1", amount: "$14,000", eta: "2026-04-24" },
-  { label: "Bid 2", amount: "$15,500", eta: "2026-04-26" },
-  { label: "Bid 3", amount: "$17,000", eta: "2026-04-27" },
-]
 
 export function RequestRoomPage() {
   const { requestId = "unknown" } = useParams()
   const setLastVisitedRequestId = useAppStore((state) => state.setLastVisitedRequestId)
+  const roomQuery = useRoomSnapshotQuery(requestId)
 
   useEffect(() => {
     setLastVisitedRequestId(requestId)
@@ -47,15 +44,24 @@ export function RequestRoomPage() {
             <Typography variant="h6" fontWeight={700}>
               Current leaderboard
             </Typography>
+            <Typography color="text.secondary">
+              Connected viewers: {roomQuery.data?.connectedViewers ?? 0}
+            </Typography>
             <Divider />
+            {roomQuery.isLoading && <Skeleton variant="rounded" height={180} />}
             <List disablePadding>
-              {leaderboard.map((entry) => (
-                <ListItem key={entry.label} disablePadding sx={{ py: 1.5 }}>
-                  <ListItemText primary={entry.label} secondary={`ETA ${entry.eta}`} />
-                  <Typography fontWeight={700}>{entry.amount}</Typography>
+              {roomQuery.data?.leaderboard.map((entry, index) => (
+                <ListItem key={entry.bidId} disablePadding sx={{ py: 1.5 }}>
+                  <ListItemText primary={`Bid ${index + 1}`} secondary={`ETA ${entry.availableDate}`} />
+                  <Typography fontWeight={700}>
+                    PHP {(entry.amountCents / 100).toLocaleString()}
+                  </Typography>
                 </ListItem>
               ))}
             </List>
+            {roomQuery.isSuccess && roomQuery.data.leaderboard.length === 0 && (
+              <Alert severity="warning">No bids in this room yet.</Alert>
+            )}
           </Stack>
         </CardContent>
       </Card>

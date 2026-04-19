@@ -147,6 +147,12 @@ export const RequestSummarySchema = Schema.Struct({
 })
 export type RequestSummary = typeof RequestSummarySchema.Type
 
+export const RequestListResponseSchema = Schema.Struct({
+  items: Schema.Array(RequestSummarySchema),
+  filters: Schema.Array(ProviderCategorySchema),
+})
+export type RequestListResponse = typeof RequestListResponseSchema.Type
+
 export const ProviderLeaderboardBidSchema = Schema.Struct({
   bidId: Schema.String,
   position: Schema.Number.pipe(Schema.int(), Schema.positive()),

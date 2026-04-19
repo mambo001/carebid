@@ -4,10 +4,13 @@ import * as Schema from "@effect/schema/Schema"
 
 import {
   CreateCareRequestInputSchema,
+  RequestListResponseSchema,
   RequestRoomSnapshotSchema,
   appName,
   providerCategories,
 } from "@carebid/shared"
+
+import { demoRequests } from "./demo-data"
 
 export const createRouter = () => {
   const app = new Hono<{ Bindings: Env }>()
@@ -15,10 +18,12 @@ export const createRouter = () => {
   app.get("/health", (c) => c.json({ ok: true, app: appName, env: c.env.APP_NAME }))
 
   app.get("/api/requests", (c) =>
-    c.json({
-      items: [],
-      filters: providerCategories,
-    }),
+    c.json(
+      Schema.decodeUnknownSync(RequestListResponseSchema)({
+        items: demoRequests,
+        filters: providerCategories,
+      }),
+    ),
   )
 
   app.post("/api/requests/validate", async (c) => {
