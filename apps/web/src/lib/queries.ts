@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "./api"
 import type {
+  BidInput,
   CreateCareRequestInput,
   PatientOnboardingInput,
   ProviderOnboardingInput,
+  WithdrawBidInput,
   ViewerRole,
 } from "@carebid/shared"
 
@@ -73,6 +75,28 @@ export const useCreateRequestMutation = () => {
     mutationFn: (input: CreateCareRequestInput) => api.createRequest(input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: requestKeys.all })
+    },
+  })
+}
+
+export const usePlaceBidMutation = (requestId: string) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: BidInput) => api.placeBid(requestId, input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: requestKeys.room(requestId) })
+    },
+  })
+}
+
+export const useWithdrawBidMutation = (requestId: string) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: WithdrawBidInput) => api.withdrawBid(requestId, input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: requestKeys.room(requestId) })
     },
   })
 }

@@ -15,10 +15,12 @@ import { useParams } from "react-router-dom"
 
 import { useRoomSnapshotQuery } from "../lib/queries"
 import { useAppStore } from "../store/app-store"
+import { ProviderBidCard } from "./ProviderBidCard"
 
 export function RequestRoomPage() {
   const { requestId = "unknown" } = useParams()
   const setLastVisitedRequestId = useAppStore((state) => state.setLastVisitedRequestId)
+  const activeRole = useAppStore((state) => state.activeRole)
   const roomQuery = useRoomSnapshotQuery(requestId)
 
   useEffect(() => {
@@ -52,7 +54,10 @@ export function RequestRoomPage() {
             <List disablePadding>
               {roomQuery.data?.leaderboard.map((entry, index) => (
                 <ListItem key={entry.bidId} disablePadding sx={{ py: 1.5 }}>
-                  <ListItemText primary={`Bid ${index + 1}`} secondary={`ETA ${entry.availableDate}`} />
+                  <ListItemText
+                    primary={`${index + 1}. ${entry.providerDisplayName}`}
+                    secondary={`ETA ${entry.availableDate}`}
+                  />
                   <Typography fontWeight={700}>
                     PHP {(entry.amountCents / 100).toLocaleString()}
                   </Typography>
@@ -65,6 +70,8 @@ export function RequestRoomPage() {
           </Stack>
         </CardContent>
       </Card>
+
+      {activeRole === "provider" && <ProviderBidCard requestId={requestId} />}
     </Stack>
   )
 }

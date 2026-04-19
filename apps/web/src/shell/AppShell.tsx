@@ -7,9 +7,22 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material"
+import { useEffect } from "react"
 import { NavLink, Outlet } from "react-router-dom"
 
+import { useSessionQuery } from "../lib/queries"
+import { useAppStore } from "../store/app-store"
+
 export function AppShell() {
+  const sessionQuery = useSessionQuery()
+  const setSession = useAppStore((state) => state.setSession)
+
+  useEffect(() => {
+    if (sessionQuery.data?.session) {
+      setSession(sessionQuery.data.session)
+    }
+  }, [sessionQuery.data, setSession])
+
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
       <AppBar position="sticky" color="inherit" elevation={0}>

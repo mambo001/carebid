@@ -1,6 +1,8 @@
 import * as Schema from "@effect/schema/Schema"
 
 import {
+  BidInputSchema,
+  BidMutationResponseSchema,
   PatientOnboardingInputSchema,
   PatientOnboardingResponseSchema,
   ProviderOnboardingInputSchema,
@@ -10,13 +12,16 @@ import {
   RequestListResponseSchema,
   RequestRoomSnapshotSchema,
   SessionResponseSchema,
+  WithdrawBidInputSchema,
   ViewerRoleSchema,
 } from "@carebid/shared"
 
 import type {
+  BidInput,
   CreateCareRequestInput,
   PatientOnboardingInput,
   ProviderOnboardingInput,
+  WithdrawBidInput,
   ViewerRole,
 } from "@carebid/shared"
 
@@ -92,6 +97,32 @@ export const api = {
     const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/room`)
 
     return decodeJson(RequestRoomSnapshotSchema, response)
+  },
+
+  async placeBid(requestId: string, input: BidInput) {
+    const payload = Schema.decodeUnknownSync(BidInputSchema)(input)
+    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/bids`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+
+    return decodeJson(BidMutationResponseSchema, response)
+  },
+
+  async withdrawBid(requestId: string, input: WithdrawBidInput) {
+    const payload = Schema.decodeUnknownSync(WithdrawBidInputSchema)(input)
+    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/bids/withdraw`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+
+    return decodeJson(BidMutationResponseSchema, response)
   },
 
   async createRequest(input: CreateCareRequestInput) {

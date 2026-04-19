@@ -104,6 +104,8 @@ export type CreateCareRequestInput = typeof CreateCareRequestInputSchema.Type
 
 export const BidInputSchema = Schema.Struct({
   requestId: Schema.String.pipe(Schema.minLength(1)),
+  providerId: Schema.String.pipe(Schema.minLength(1)),
+  providerDisplayName: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(120)),
   amountCents: Schema.Number.pipe(Schema.int(), Schema.positive()),
   availableDate: Schema.String,
   notes: Schema.optional(Schema.String.pipe(Schema.maxLength(280))),
@@ -112,6 +114,7 @@ export type BidInput = typeof BidInputSchema.Type
 
 export const WithdrawBidInputSchema = Schema.Struct({
   requestId: Schema.String.pipe(Schema.minLength(1)),
+  providerId: Schema.String.pipe(Schema.minLength(1)),
 })
 export type WithdrawBidInput = typeof WithdrawBidInputSchema.Type
 
@@ -297,12 +300,21 @@ export const RequestRoomSnapshotSchema = Schema.Struct({
   leaderboard: Schema.Array(
     Schema.Struct({
       bidId: Schema.String,
+      providerId: Schema.String,
+      providerDisplayName: Schema.String,
       amountCents: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
       availableDate: Schema.String,
+      notes: Schema.optional(Schema.String),
     }),
   ),
 })
 export type RequestRoomSnapshot = typeof RequestRoomSnapshotSchema.Type
+
+export const BidMutationResponseSchema = Schema.Struct({
+  ok: Schema.Boolean,
+  snapshot: RequestRoomSnapshotSchema,
+})
+export type BidMutationResponse = typeof BidMutationResponseSchema.Type
 
 export const RoomEventSchema = Schema.Struct({
   type: RoomEventTypeSchema,
