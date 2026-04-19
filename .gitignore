@@ -1,0 +1,12 @@
+node_modules/
+.DS_Store
+dist/
+.wrangler/
+.turbo/
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+coverage/
+apps/backend/generated/

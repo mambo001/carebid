@@ -1,0 +1,42 @@
+{
+  "name": "carebid",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "bun@1.2.21",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "build": "bun run --filter '*' build",
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "bun run --filter '*' lint",
+    "deploy": "bun run build && wrangler deploy --config apps/backend/wrangler.jsonc && wrangler deploy --config apps/web/wrangler.jsonc"
+  },
+  "dependencies": {
+    "@effect/schema": "^0.75.5",
+    "@prisma/adapter-neon": "^6.6.0",
+    "@cloudflare/vite-plugin": "^1.12.0",
+    "@cloudflare/workers-types": "^4.20260405.0",
+    "@tanstack/react-query": "^5.75.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "effect": "^3.18.4",
+    "hono": "^4.8.5",
+    "mui-rff": "^8.0.3",
+    "@mui/material": "^7.0.2",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "prisma": "^6.6.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.5.1",
+    "vite": "^6.3.2",
+    "wrangler": "^4.12.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "typescript": "^5.8.3"
+  }
+}
