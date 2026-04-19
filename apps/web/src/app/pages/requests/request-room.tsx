@@ -15,7 +15,7 @@ import {
 import { useEffect } from "react"
 import { useParams } from "react-router-dom"
 
-import { useAcceptBidMutation, useExpireRequestMutation, useRoomSnapshotQuery } from "../../../lib/queries"
+import { useAcceptBidMutation, useExpireRequestMutation, useOpenRequestMutation, useRoomSnapshotQuery } from "../../../lib/queries"
 import { useRoomSocket } from "../../../lib/use-room-socket"
 import { useAppState } from "../../context"
 import { ProviderBidCard } from "./provider-bid-card"
@@ -27,6 +27,7 @@ export function RequestRoomPage() {
   const roomQuery = useRoomSnapshotQuery(requestId)
   const acceptBid = useAcceptBidMutation(requestId)
   const expireRequest = useExpireRequestMutation(requestId)
+  const openRequest = useOpenRequestMutation()
 
   useRoomSocket(requestId)
 
@@ -102,6 +103,16 @@ export function RequestRoomPage() {
                 onClick={() => expireRequest.mutate()}
               >
                 {expireRequest.isPending ? "Expiring..." : "Expire request"}
+              </Button>
+            )}
+
+            {activeRole === "patient" && snapshot?.status === "draft" && (
+              <Button
+                variant="contained"
+                disabled={openRequest.isPending}
+                onClick={() => openRequest.mutate(requestId)}
+              >
+                {openRequest.isPending ? "Opening..." : "Open request for bidding"}
               </Button>
             )}
           </Stack>

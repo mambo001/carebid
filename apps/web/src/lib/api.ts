@@ -12,6 +12,7 @@ import {
   CreateCareRequestResponseSchema,
   RequestListResponseSchema,
   RequestResolutionResponseSchema,
+  RequestSummaryResponseSchema,
   RoomConnectionResponseSchema,
   RequestRoomSnapshotSchema,
   RoomSnapshotMessageSchema,
@@ -168,6 +169,14 @@ export const api = {
     })
 
     return decodeJson(CreateCareRequestResponseSchema, response)
+  },
+
+  async openRequest(requestId: string) {
+    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/open`, {
+      method: "POST",
+    })
+
+    return decodeJson(RequestSummaryResponseSchema, response)
   },
 }
 

@@ -80,6 +80,18 @@ export const useCreateRequestMutation = () => {
   })
 }
 
+export const useOpenRequestMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (requestId: string) => api.openRequest(requestId),
+    onSuccess: async (_, requestId) => {
+      await queryClient.invalidateQueries({ queryKey: requestKeys.all })
+      await queryClient.invalidateQueries({ queryKey: requestKeys.room(requestId) })
+    },
+  })
+}
+
 export const usePlaceBidMutation = (requestId: string) => {
   const queryClient = useQueryClient()
 

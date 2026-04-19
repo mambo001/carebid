@@ -17,7 +17,7 @@ import { useAppState } from "../../context"
 export function ProviderDashboardPage() {
   const setActiveRole = useAppState((state) => state.setActiveRole)
   const requestsQuery = useRequestsQuery()
-  const requests = requestsQuery.data?.items ?? []
+  const requests = (requestsQuery.data?.items ?? []).filter((request) => request.status === "open")
 
   return (
     <Stack spacing={3}>

@@ -11,13 +11,14 @@ import {
 } from "@mui/material"
 import { Link as RouterLink } from "react-router-dom"
 
-import { useRequestsQuery } from "../../../lib/queries"
+import { useOpenRequestMutation, useRequestsQuery } from "../../../lib/queries"
 import { useAppState } from "../../context"
 import { PatientRequestFormCard } from "./request-form-card"
 
 export function PatientDashboardPage() {
   const setActiveRole = useAppState((state) => state.setActiveRole)
   const requestsQuery = useRequestsQuery()
+  const openRequest = useOpenRequestMutation()
   const requests = requestsQuery.data?.items ?? []
 
   return (
@@ -64,9 +65,16 @@ export function PatientDashboardPage() {
                   <Typography variant="body2">
                     Target budget: PHP {(request.targetBudgetCents / 100).toLocaleString()}
                   </Typography>
-                  <Button component={RouterLink} to={`/requests/${request.id}`} variant="outlined">
-                    Open room
-                  </Button>
+                  <Stack direction="row" spacing={1.5}>
+                    {request.status === "draft" && (
+                      <Button variant="contained" onClick={() => openRequest.mutate(request.id)}>
+                        Open request
+                      </Button>
+                    )}
+                    <Button component={RouterLink} to={`/requests/${request.id}`} variant="outlined">
+                      Open room
+                    </Button>
+                  </Stack>
                 </Stack>
               </CardContent>
             </Card>
