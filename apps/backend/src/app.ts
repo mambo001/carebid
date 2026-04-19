@@ -1,17 +1,21 @@
-import { Effect } from "effect"
+import { Effect, Layer } from "effect"
 import { Hono } from "hono"
 
-import { RequestNotFoundError } from "./domain/errors/request-not-found"
+import { DatabaseError, RequestNotFoundError, SessionError } from "./domain/errors"
+import { RequestRepository } from "./domain/ports/request-repository"
+import { SessionRepository } from "./domain/ports/session-repository"
 import { createOnboardingRoutes, createRequestRoutes, createSessionRoutes } from "./interface/routes"
 import { makeAppLayer } from "./layers"
 
-export const runAppEffect = async <Result, Requirements>(
+type AppLayer = RequestRepository | SessionRepository
+
+export const runAppEffect = async <Result>(
   env: Env,
-  effect: Effect.Effect<Result, unknown, Requirements>,
+  effect: Effect.Effect<Result, RequestNotFoundError | DatabaseError | SessionError, AppLayer>,
   onSuccess: (result: Result) => Response | Promise<Response>,
 ): Promise<Response> => {
   try {
-    const runnable = effect.pipe(Effect.provide(makeAppLayer(env) as any)) as Effect.Effect<Result, unknown, never>
+    const runnable = Effect.provide(effect, makeAppLayer(env))
     const result = await Effect.runPromise(runnable)
 
     return await onSuccess(result)

@@ -1,4 +1,4 @@
-import { Context } from "effect"
+import { Context, Effect } from "effect"
 
 import type {
   AppSession,
@@ -8,11 +8,17 @@ import type {
   ProviderProfile,
 } from "@carebid/shared"
 
-export type SessionRepository = {
-  getSession: () => Promise<AppSession>
-  switchRole: (role: AppSession["role"]) => Promise<AppSession>
-  savePatient: (input: PatientOnboardingInput) => Promise<{ profile: PatientProfile; session: AppSession }>
-  saveProvider: (input: ProviderOnboardingInput) => Promise<{ profile: ProviderProfile; session: AppSession }>
+import { DatabaseError, SessionError } from "../errors"
+
+export interface SessionRepository {
+  readonly getSession: () => Effect.Effect<AppSession, DatabaseError | SessionError>
+  readonly switchRole: (role: AppSession["role"]) => Effect.Effect<AppSession, DatabaseError | SessionError>
+  readonly savePatient: (
+    input: PatientOnboardingInput,
+  ) => Effect.Effect<{ profile: PatientProfile; session: AppSession }, DatabaseError | SessionError>
+  readonly saveProvider: (
+    input: ProviderOnboardingInput,
+  ) => Effect.Effect<{ profile: ProviderProfile; session: AppSession }, DatabaseError | SessionError>
 }
 
 export const SessionRepository = Context.GenericTag<SessionRepository>("@carebid/SessionRepository")

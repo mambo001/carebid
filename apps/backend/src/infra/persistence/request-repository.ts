@@ -1,8 +1,9 @@
-import { Layer } from "effect"
+import { Effect, Layer } from "effect"
 import type { PrismaClient } from "@prisma/client"
 
 import type { CreateCareRequestInput, RequestSummary } from "@carebid/shared"
 
+import { DatabaseError, RequestNotFoundError } from "../../domain/errors"
 import { RequestRepository } from "../../domain/ports/request-repository"
 import { createPrismaClient } from "../../lib/db"
 import { createDemoRequest, demoRequests } from "../../lib/demo-data"
@@ -40,167 +41,160 @@ const mapRequestSummary = (request: {
   expiresAt: request.expiresAt.toISOString(),
 })
 
-const withPrisma = async <Result>(
+const withPrisma = <Result>(
   env: Env,
   fn: (prisma: PrismaClient) => Promise<Result>,
-): Promise<Result | undefined> => {
+): Effect.Effect<Result | undefined, DatabaseError> => {
   if (!env.DATABASE_URL) {
-    return undefined
+    return Effect.succeed(undefined)
   }
 
   const prisma = createPrismaClient(env.DATABASE_URL)
 
-  try {
-    return await fn(prisma)
-  } finally {
-    await prisma.$disconnect()
-  }
+  return Effect.tryPromise({
+    try: () => fn(prisma),
+    catch: (error) => new DatabaseError({ message: String(error) }),
+  }).pipe(Effect.ensuring(Effect.promise(() => prisma.$disconnect())))
 }
 
 const makeLiveRequestRepository = (env: Env): RequestRepository => ({
-  listRequests: async () => {
-    const persisted = await withPrisma(env, async (prisma) => {
-      const requests = await prisma.careRequest.findMany({
-        orderBy: { createdAt: "desc" },
+  listRequests: () =>
+    Effect.gen(function* () {
+      const persisted = yield* withPrisma(env, async (prisma) => {
+        const requests = await prisma.careRequest.findMany({ orderBy: { createdAt: "desc" } })
+        return requests.map(mapRequestSummary)
       })
 
-      return requests.map(mapRequestSummary)
-    })
+      return persisted ?? demoRequests
+    }),
 
-    return persisted ?? demoRequests
-  },
-  getRequest: async (requestId: string) => {
-    const persisted = await withPrisma(env, async (prisma) => {
-      const request = await prisma.careRequest.findUnique({
-        where: { id: requestId },
+  getRequest: (requestId) =>
+    Effect.gen(function* () {
+      const persisted = yield* withPrisma(env, async (prisma) => {
+        const request = await prisma.careRequest.findUnique({ where: { id: requestId } })
+        return request ? mapRequestSummary(request) : undefined
       })
 
-      return request ? mapRequestSummary(request) : undefined
-    })
+      const result = persisted ?? demoRequests.find((r) => r.id === requestId)
 
-    return persisted ?? demoRequests.find((request) => request.id === requestId)
-  },
-  createRequest: async (input: CreateCareRequestInput) => {
-    const persisted = await withPrisma(env, async (prisma) => {
-      const patient = await prisma.patient.upsert({
-        where: { authUserId: demoAuthUserId },
-        update: {},
-        create: {
-          authUserId: demoAuthUserId,
-          email: demoEmail,
-          displayName: "Demo Patient",
-          locationCity: input.locationCity,
-          locationRegion: input.locationRegion,
-        },
+      if (!result) {
+        return yield* Effect.fail(new RequestNotFoundError({ message: `Request ${requestId} not found` }))
+      }
+
+      return result
+    }),
+
+  createRequest: (input: CreateCareRequestInput) =>
+    Effect.gen(function* () {
+      const persisted = yield* withPrisma(env, async (prisma) => {
+        const patient = await prisma.patient.upsert({
+          where: { authUserId: demoAuthUserId },
+          update: {},
+          create: {
+            authUserId: demoAuthUserId,
+            email: demoEmail,
+            displayName: "Demo Patient",
+            locationCity: input.locationCity,
+            locationRegion: input.locationRegion,
+          },
+        })
+
+        const request = await prisma.careRequest.create({
+          data: {
+            patientId: patient.id,
+            category: input.category,
+            title: input.title,
+            sanitizedSummary: input.sanitizedSummary,
+            targetBudgetCents: input.targetBudgetCents,
+            locationCity: input.locationCity,
+            locationRegion: input.locationRegion,
+            preferredStartDate: new Date(input.preferredStartDate),
+            preferredEndDate: new Date(input.preferredEndDate),
+            urgency: input.urgency,
+            serviceMode: input.serviceMode,
+            details: input.details,
+            status: "draft",
+            expiresAt: new Date(input.expiresAt),
+          },
+        })
+
+        return mapRequestSummary(request)
       })
 
-      const request = await prisma.careRequest.create({
-        data: {
-          patientId: patient.id,
-          category: input.category,
-          title: input.title,
-          sanitizedSummary: input.sanitizedSummary,
-          targetBudgetCents: input.targetBudgetCents,
-          locationCity: input.locationCity,
-          locationRegion: input.locationRegion,
-          preferredStartDate: new Date(input.preferredStartDate),
-          preferredEndDate: new Date(input.preferredEndDate),
-          urgency: input.urgency,
-          serviceMode: input.serviceMode,
-          details: input.details,
-          status: "draft",
-          expiresAt: new Date(input.expiresAt),
-        },
+      return persisted ?? createDemoRequest(input)
+    }),
+
+  openRequest: (requestId) =>
+    Effect.gen(function* () {
+      const persisted = yield* withPrisma(env, async (prisma) => {
+        const request = await prisma.careRequest.update({
+          where: { id: requestId },
+          data: { status: "open" },
+        })
+        return mapRequestSummary(request)
       })
 
-      return mapRequestSummary(request)
-    })
+      if (persisted) return persisted
 
-    return persisted ?? createDemoRequest(input)
-  },
-  openRequest: async (requestId: string) => {
-    const persisted = await withPrisma(env, async (prisma) => {
-      const request = await prisma.careRequest.update({
-        where: { id: requestId },
-        data: { status: "open" },
+      const index = demoRequests.findIndex((r) => r.id === requestId)
+
+      if (index === -1) {
+        return yield* Effect.fail(new RequestNotFoundError({ message: `Request ${requestId} not found` }))
+      }
+
+      const next = { ...demoRequests[index], status: "open" as const }
+      demoRequests[index] = next
+
+      return next
+    }),
+
+  markRequestAwarded: (requestId, bidId) =>
+    Effect.gen(function* () {
+      const persisted = yield* withPrisma(env, async (prisma) => {
+        const request = await prisma.careRequest.update({
+          where: { id: requestId },
+          data: { status: "awarded", awardedBidId: bidId },
+        })
+        return mapRequestSummary(request)
       })
 
-      return mapRequestSummary(request)
-    })
+      if (persisted) return persisted
 
-    if (persisted) {
-      return persisted
-    }
+      const index = demoRequests.findIndex((r) => r.id === requestId)
 
-    const request = demoRequests.find((item) => item.id === requestId)
+      if (index === -1) {
+        return yield* Effect.fail(new RequestNotFoundError({ message: `Request ${requestId} not found` }))
+      }
 
-    if (!request) {
-      return undefined
-    }
+      const next = { ...demoRequests[index], status: "awarded" as const }
+      demoRequests[index] = next
 
-    const nextRequest = { ...request, status: "open" as const }
-    const index = demoRequests.findIndex((item) => item.id === requestId)
-    demoRequests[index] = nextRequest
+      return next
+    }),
 
-    return nextRequest
-  },
-  markRequestAwarded: async (requestId: string, bidId: string) => {
-    const persisted = await withPrisma(env, async (prisma) => {
-      const request = await prisma.careRequest.update({
-        where: { id: requestId },
-        data: {
-          status: "awarded",
-          awardedBidId: bidId,
-        },
+  markRequestExpired: (requestId) =>
+    Effect.gen(function* () {
+      const persisted = yield* withPrisma(env, async (prisma) => {
+        const request = await prisma.careRequest.update({
+          where: { id: requestId },
+          data: { status: "expired" },
+        })
+        return mapRequestSummary(request)
       })
 
-      return mapRequestSummary(request)
-    })
+      if (persisted) return persisted
 
-    if (persisted) {
-      return persisted
-    }
+      const index = demoRequests.findIndex((r) => r.id === requestId)
 
-    const request = demoRequests.find((item) => item.id === requestId)
+      if (index === -1) {
+        return yield* Effect.fail(new RequestNotFoundError({ message: `Request ${requestId} not found` }))
+      }
 
-    if (!request) {
-      return undefined
-    }
+      const next = { ...demoRequests[index], status: "expired" as const }
+      demoRequests[index] = next
 
-    const nextRequest = { ...request, status: "awarded" as const }
-    const index = demoRequests.findIndex((item) => item.id === requestId)
-    demoRequests[index] = nextRequest
-
-    return nextRequest
-  },
-  markRequestExpired: async (requestId: string) => {
-    const persisted = await withPrisma(env, async (prisma) => {
-      const request = await prisma.careRequest.update({
-        where: { id: requestId },
-        data: {
-          status: "expired",
-        },
-      })
-
-      return mapRequestSummary(request)
-    })
-
-    if (persisted) {
-      return persisted
-    }
-
-    const request = demoRequests.find((item) => item.id === requestId)
-
-    if (!request) {
-      return undefined
-    }
-
-    const nextRequest = { ...request, status: "expired" as const }
-    const index = demoRequests.findIndex((item) => item.id === requestId)
-    demoRequests[index] = nextRequest
-
-    return nextRequest
-  },
+      return next
+    }),
 })
 
 export const makeRequestRepositoryLayer = (env: Env) =>
