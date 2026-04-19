@@ -16,17 +16,32 @@ import { placeBidCommand } from "../../application/commands/room/place-bid"
 import { syncRoomStatusCommand } from "../../application/commands/room/sync-room-status"
 import { withdrawBidCommand } from "../../application/commands/room/withdraw-bid"
 import { getRoomSnapshotQuery } from "../../application/queries/room/get-room-snapshot"
-import { RoomNotOpenError } from "../../domain/errors"
+import { DatabaseError, RoomNotOpenError } from "../../domain/errors"
 import { RoomGateway } from "../../domain/ports/room-gateway"
 import type { RoomState } from "../../domain/entities"
 import { createRoomSnapshot } from "../../domain/room"
 
 type Provide = <Result, E>(effect: Effect.Effect<Result, E, RoomGateway>) => Effect.Effect<Result, E, never>
 
+const decodeBidInput = Schema.decodeUnknownSync(BidInputSchema)
+const decodeWithdrawBidInput = Schema.decodeUnknownSync(WithdrawBidInputSchema)
+const decodeAcceptBidInput = Schema.decodeUnknownSync(AcceptBidInputSchema)
+const decodeBidMutationResponse = Schema.decodeUnknownSync(BidMutationResponseSchema)
+const decodeResolutionResponse = Schema.decodeUnknownSync(RequestResolutionResponseSchema)
+const decodeStatusSyncBody = Schema.decodeUnknownSync(
+  Schema.Struct({ status: Schema.Literal("draft", "open", "awarded", "expired") }),
+)
+
 const validStatuses = ["draft", "open", "awarded", "expired"] as const
 
 const parseInitialStatus = (param: string | null): RoomState["status"] =>
   validStatuses.includes(param as RoomState["status"]) ? (param as RoomState["status"]) : "open"
+
+const bidMutationResponse = (state: RoomState) =>
+  Response.json(decodeBidMutationResponse({ ok: true, snapshot: createRoomSnapshot(state) }))
+
+const resolutionResponse = (state: RoomState) =>
+  Response.json(decodeResolutionResponse({ ok: true, snapshot: createRoomSnapshot(state) }))
 
 const closedResponse = (state: RoomState) =>
   Response.json(
@@ -34,13 +49,22 @@ const closedResponse = (state: RoomState) =>
     { status: 409 },
   )
 
-const onRoomNotOpen = (requestId: string) =>
-  Effect.gen(function* () {
-    const state = yield* getRoomSnapshotQuery(requestId)
-    return closedResponse(state)
-  })
+const handleRoomErrors = (requestId: string) =>
+  (effect: Effect.Effect<Response, RoomNotOpenError | DatabaseError, RoomGateway>): Effect.Effect<Response, never, RoomGateway> =>
+    Effect.catchAll(effect, () =>
+      Effect.gen(function* () {
+        const state = yield* getRoomSnapshotQuery(requestId).pipe(
+          Effect.catchAll(() => Effect.succeed(null)),
+        )
+        if (state) return closedResponse(state)
+        return Response.json({ ok: false, error: "Room error" }, { status: 500 })
+      }),
+    )
 
 export const createRoomRoutes = (provide: Provide) => {
+  const run = (effect: Effect.Effect<Response, never, RoomGateway>) =>
+    Effect.runPromise(provide(effect))
+
   const app = new Hono()
 
   app.get("/snapshot", async (c) => {
@@ -52,74 +76,56 @@ export const createRoomRoutes = (provide: Provide) => {
 
   app.post("/status/sync", async (c) => {
     const requestId = c.req.query("requestId") ?? ""
-    const body = Schema.decodeUnknownSync(
-      Schema.Struct({ status: Schema.Literal("draft", "open", "awarded", "expired") }),
-    )(await c.req.json())
-    const state = await Effect.runPromise(provide(syncRoomStatusCommand(requestId, body.status)))
+    const { status } = decodeStatusSyncBody(await c.req.json())
+    const state = await Effect.runPromise(provide(syncRoomStatusCommand(requestId, status)))
     return c.json(createRoomSnapshot(state))
   })
 
   app.post("/bids/place", async (c) => {
     const requestId = c.req.query("requestId") ?? ""
-    const input = Schema.decodeUnknownSync(BidInputSchema)(await c.req.json())
-    const response = await Effect.runPromise(
-      provide(
-        placeBidCommand(input).pipe(
-          Effect.map((state) =>
-            Response.json(Schema.decodeUnknownSync(BidMutationResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) })),
-          ),
-          Effect.catchTag("RoomNotOpenError", () => onRoomNotOpen(requestId)),
-        ),
-      ),
+    const input = decodeBidInput(await c.req.json())
+
+    return run(
+      Effect.gen(function* () {
+        const state = yield* placeBidCommand(input)
+        return bidMutationResponse(state)
+      }).pipe(handleRoomErrors(requestId)),
     )
-    return response
   })
 
   app.post("/bids/withdraw", async (c) => {
     const requestId = c.req.query("requestId") ?? ""
-    const input = Schema.decodeUnknownSync(WithdrawBidInputSchema)(await c.req.json())
-    const response = await Effect.runPromise(
-      provide(
-        withdrawBidCommand(input).pipe(
-          Effect.map((state) =>
-            Response.json(Schema.decodeUnknownSync(BidMutationResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) })),
-          ),
-          Effect.catchTag("RoomNotOpenError", () => onRoomNotOpen(requestId)),
-        ),
-      ),
+    const input = decodeWithdrawBidInput(await c.req.json())
+
+    return run(
+      Effect.gen(function* () {
+        const state = yield* withdrawBidCommand(input)
+        return bidMutationResponse(state)
+      }).pipe(handleRoomErrors(requestId)),
     )
-    return response
   })
 
   app.post("/bids/accept", async (c) => {
     const requestId = c.req.query("requestId") ?? ""
-    const input = Schema.decodeUnknownSync(AcceptBidInputSchema)(await c.req.json())
-    const response = await Effect.runPromise(
-      provide(
-        acceptBidCommand(input).pipe(
-          Effect.map((state) =>
-            Response.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) })),
-          ),
-          Effect.catchTag("RoomNotOpenError", () => onRoomNotOpen(requestId)),
-        ),
-      ),
+    const input = decodeAcceptBidInput(await c.req.json())
+
+    return run(
+      Effect.gen(function* () {
+        const state = yield* acceptBidCommand(input)
+        return resolutionResponse(state)
+      }).pipe(handleRoomErrors(requestId)),
     )
-    return response
   })
 
   app.post("/expire", async (c) => {
     const requestId = c.req.query("requestId") ?? ""
-    const response = await Effect.runPromise(
-      provide(
-        expireRoomCommand(requestId).pipe(
-          Effect.map((state) =>
-            Response.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) })),
-          ),
-          Effect.catchTag("RoomNotOpenError", () => onRoomNotOpen(requestId)),
-        ),
-      ),
+
+    return run(
+      Effect.gen(function* () {
+        const state = yield* expireRoomCommand(requestId)
+        return resolutionResponse(state)
+      }).pipe(handleRoomErrors(requestId)),
     )
-    return response
   })
 
   return app

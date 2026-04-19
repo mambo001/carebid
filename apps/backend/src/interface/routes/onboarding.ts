@@ -12,40 +12,35 @@ import {
   ProviderOnboardingResponseSchema,
 } from "@carebid/shared"
 
+const decodePatientInput = Schema.decodeUnknownSync(PatientOnboardingInputSchema)
+const decodePatientResponse = Schema.decodeUnknownSync(PatientOnboardingResponseSchema)
+const decodeProviderInput = Schema.decodeUnknownSync(ProviderOnboardingInputSchema)
+const decodeProviderResponse = Schema.decodeUnknownSync(ProviderOnboardingResponseSchema)
+
 export const createOnboardingRoutes = () => {
   const app = new Hono<{ Bindings: Env }>()
 
   app.post("/onboarding/patient", async (c) => {
-    const input = Schema.decodeUnknownSync(PatientOnboardingInputSchema)(await c.req.json())
+    const input = decodePatientInput(await c.req.json())
 
     return runEffect(
       c.env,
-      onboardPatient(input).pipe(
-        Effect.map((result) =>
-          c.json(
-            Schema.decodeUnknownSync(PatientOnboardingResponseSchema)({ ok: true, ...result }),
-            201,
-          ),
-        ),
-        handleAppErrors,
-      ),
+      Effect.gen(function* () {
+        const result = yield* onboardPatient(input)
+        return c.json(decodePatientResponse({ ok: true, ...result }), 201)
+      }).pipe(handleAppErrors),
     )
   })
 
   app.post("/onboarding/provider", async (c) => {
-    const input = Schema.decodeUnknownSync(ProviderOnboardingInputSchema)(await c.req.json())
+    const input = decodeProviderInput(await c.req.json())
 
     return runEffect(
       c.env,
-      onboardProvider(input).pipe(
-        Effect.map((result) =>
-          c.json(
-            Schema.decodeUnknownSync(ProviderOnboardingResponseSchema)({ ok: true, ...result }),
-            201,
-          ),
-        ),
-        handleAppErrors,
-      ),
+      Effect.gen(function* () {
+        const result = yield* onboardProvider(input)
+        return c.json(decodeProviderResponse({ ok: true, ...result }), 201)
+      }).pipe(handleAppErrors),
     )
   })
 

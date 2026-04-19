@@ -7,35 +7,33 @@ import { switchRole } from "../../application/commands/switch-role"
 import { handleAppErrors, runEffect } from "../../app"
 import { SessionResponseSchema, ViewerRoleSchema } from "@carebid/shared"
 
+const decodeSessionResponse = Schema.decodeUnknownSync(SessionResponseSchema)
+const decodeRoleBody = Schema.decodeUnknownSync(
+  Schema.Struct({ role: Schema.optional(ViewerRoleSchema) }),
+)
+
 export const createSessionRoutes = () => {
   const app = new Hono<{ Bindings: Env }>()
 
   app.get("/session", (c) =>
     runEffect(
       c.env,
-      getSession().pipe(
-        Effect.map((session) =>
-          c.json(Schema.decodeUnknownSync(SessionResponseSchema)({ ok: true, session })),
-        ),
-        handleAppErrors,
-      ),
+      Effect.gen(function* () {
+        const session = yield* getSession()
+        return c.json(decodeSessionResponse({ ok: true, session }))
+      }).pipe(handleAppErrors),
     ),
   )
 
   app.post("/session/role", async (c) => {
-    const body = await c.req.json()
-    const role = Schema.decodeUnknownSync(
-      Schema.Struct({ role: Schema.optional(ViewerRoleSchema) }),
-    )(body).role
+    const { role } = decodeRoleBody(await c.req.json())
 
     return runEffect(
       c.env,
-      switchRole(role).pipe(
-        Effect.map((session) =>
-          c.json(Schema.decodeUnknownSync(SessionResponseSchema)({ ok: true, session })),
-        ),
-        handleAppErrors,
-      ),
+      Effect.gen(function* () {
+        const session = yield* switchRole(role)
+        return c.json(decodeSessionResponse({ ok: true, session }))
+      }).pipe(handleAppErrors),
     )
   })
 
