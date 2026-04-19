@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DIRECT_URL")
+  url      = env("DATABASE_URL")
 }
 
 enum ProviderCategory {
@@ -62,11 +62,11 @@ enum ViewerRole {
 }
 
 model DemoSession {
-  authUserId  String     @id
-  email       String
-  activeRole  ViewerRole?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  authUserId String      @id
+  email      String
+  activeRole ViewerRole?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 model Patient {
@@ -82,19 +82,19 @@ model Patient {
 }
 
 model Provider {
-  id                  String                       @id @default(cuid())
-  authUserId          String                       @unique
-  email               String                       @unique
-  displayName         String
-  rating              Decimal?                     @db.Decimal(3, 2)
-  licenseRegion       String?
-  verificationStatus  ProviderVerificationStatus
-  verificationMode    ProviderVerificationMode
-  createdAt           DateTime                     @default(now())
-  updatedAt           DateTime                     @updatedAt
-  categories          ProviderCategoryAssignment[]
-  bids                Bid[]
-  bidHistory          BidHistory[]
+  id                 String                       @id @default(cuid())
+  authUserId         String                       @unique
+  email              String                       @unique
+  displayName        String
+  rating             Decimal?                     @db.Decimal(3, 2)
+  licenseRegion      String?
+  verificationStatus ProviderVerificationStatus
+  verificationMode   ProviderVerificationMode
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  categories         ProviderCategoryAssignment[]
+  bids               Bid[]
+  bidHistory         BidHistory[]
 }
 
 model ProviderCategoryAssignment {
@@ -106,47 +106,47 @@ model ProviderCategoryAssignment {
 }
 
 model CareRequest {
-  id                  String        @id @default(cuid())
-  patientId           String
-  category            ProviderCategory
-  title               String
-  sanitizedSummary    String
-  targetBudgetCents   Int
-  locationCity        String
-  locationRegion      String
-  preferredStartDate  DateTime
-  preferredEndDate    DateTime
-  urgency             Urgency
-  serviceMode         ServiceMode
-  details             Json
-  status              RequestStatus @default(draft)
-  expiresAt           DateTime
-  awardedBidId        String?       @unique
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  patient             Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  bids                Bid[]
-  awardedBid          Bid?          @relation("AwardedBid", fields: [awardedBidId], references: [id])
-  bidHistory          BidHistory[]
+  id                 String           @id @default(cuid())
+  patientId          String
+  category           ProviderCategory
+  title              String
+  sanitizedSummary   String
+  targetBudgetCents  Int
+  locationCity       String
+  locationRegion     String
+  preferredStartDate DateTime
+  preferredEndDate   DateTime
+  urgency            Urgency
+  serviceMode        ServiceMode
+  details            Json
+  status             RequestStatus    @default(draft)
+  expiresAt          DateTime
+  awardedBidId       String?          @unique
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  patient            Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bids               Bid[]
+  awardedBid         Bid?             @relation("AwardedBid", fields: [awardedBidId], references: [id])
+  bidHistory         BidHistory[]
 
   @@index([patientId, createdAt(sort: Desc)])
   @@index([status, category, expiresAt])
 }
 
 model Bid {
-  id              String       @id @default(cuid())
-  careRequestId   String
-  providerId      String
-  amountCents     Int
-  availableDate   DateTime
-  notes           String?
-  status          BidStatus    @default(active)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  careRequest     CareRequest  @relation(fields: [careRequestId], references: [id], onDelete: Cascade)
-  provider        Provider     @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  awardedFor      CareRequest? @relation("AwardedBid")
-  bidHistory      BidHistory[]
+  id            String       @id @default(cuid())
+  careRequestId String
+  providerId    String
+  amountCents   Int
+  availableDate DateTime
+  notes         String?
+  status        BidStatus    @default(active)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  careRequest   CareRequest  @relation(fields: [careRequestId], references: [id], onDelete: Cascade)
+  provider      Provider     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  awardedFor    CareRequest? @relation("AwardedBid")
+  bidHistory    BidHistory[]
 
   @@unique([careRequestId, providerId])
   @@index([careRequestId, status, amountCents, updatedAt(sort: Desc)])

@@ -91,10 +91,7 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
   const prisma = createPrismaClient(databaseUrl)
 
   return {
-    getSession: () =>
-      buildSession(prisma).pipe(
-        Effect.ensuring(Effect.promise(() => prisma.$disconnect())),
-      ),
+    getSession: () => buildSession(prisma),
 
     switchRole: (role) =>
       Effect.gen(function* () {
@@ -110,7 +107,7 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
           }),
         )
         return yield* buildSession(prisma)
-      }).pipe(Effect.ensuring(Effect.promise(() => prisma.$disconnect()))),
+      }),
 
     savePatient: (input: PatientOnboardingInput) =>
       Effect.gen(function* () {
@@ -143,7 +140,7 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
 
         const session = yield* buildSession(prisma)
         return { profile: mapPatientProfile(patient), session }
-      }).pipe(Effect.ensuring(Effect.promise(() => prisma.$disconnect()))),
+      }),
 
     saveProvider: (input: ProviderOnboardingInput) =>
       Effect.gen(function* () {
@@ -197,7 +194,7 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
 
         const session = yield* buildSession(prisma)
         return { profile: mapProviderProfile(providerWithCategories), session }
-      }).pipe(Effect.ensuring(Effect.promise(() => prisma.$disconnect()))),
+      }),
   }
 }
 

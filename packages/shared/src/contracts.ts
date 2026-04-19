@@ -1,4 +1,4 @@
-import * as Schema from "@effect/schema/Schema"
+import * as Schema from "@effect/schema/Schema";
 
 import {
   bidStatuses,
@@ -14,49 +14,56 @@ import {
   specialistVisitTypes,
   symptomDurations,
   urgencyLevels,
-} from "./constants"
+} from "./constants";
 
-const makeLiteral = <Values extends readonly [string, ...string[]]>(values: Values) =>
-  Schema.Literal(...values)
+const makeLiteral = <Values extends readonly [string, ...string[]]>(
+  values: Values,
+) => Schema.Literal(...values);
 
-export const ProviderCategorySchema = makeLiteral(providerCategories)
-export type ProviderCategory = typeof ProviderCategorySchema.Type
+export const ProviderCategorySchema = makeLiteral(providerCategories);
+export type ProviderCategory = typeof ProviderCategorySchema.Type;
 
-export const RequestStatusSchema = makeLiteral(requestStatuses)
-export type RequestStatus = typeof RequestStatusSchema.Type
+export const RequestStatusSchema = makeLiteral(requestStatuses);
+export type RequestStatus = typeof RequestStatusSchema.Type;
 
-export const BidStatusSchema = makeLiteral(bidStatuses)
-export type BidStatus = typeof BidStatusSchema.Type
+export const BidStatusSchema = makeLiteral(bidStatuses);
+export type BidStatus = typeof BidStatusSchema.Type;
 
-export const UrgencySchema = makeLiteral(urgencyLevels)
-export type Urgency = typeof UrgencySchema.Type
+export const UrgencySchema = makeLiteral(urgencyLevels);
+export type Urgency = typeof UrgencySchema.Type;
 
-export const ServiceModeSchema = makeLiteral(serviceModes)
-export type ServiceMode = typeof ServiceModeSchema.Type
+export const ServiceModeSchema = makeLiteral(serviceModes);
+export type ServiceMode = typeof ServiceModeSchema.Type;
 
-export const ProviderVerificationModeSchema = makeLiteral(providerVerificationModes)
-export type ProviderVerificationMode = typeof ProviderVerificationModeSchema.Type
+export const ProviderVerificationModeSchema = makeLiteral(
+  providerVerificationModes,
+);
+export type ProviderVerificationMode =
+  typeof ProviderVerificationModeSchema.Type;
 
-export const ProviderVerificationStatusSchema = makeLiteral(providerVerificationStatuses)
-export type ProviderVerificationStatus = typeof ProviderVerificationStatusSchema.Type
+export const ProviderVerificationStatusSchema = makeLiteral(
+  providerVerificationStatuses,
+);
+export type ProviderVerificationStatus =
+  typeof ProviderVerificationStatusSchema.Type;
 
-export const SpecialistVisitTypeSchema = makeLiteral(specialistVisitTypes)
-export type SpecialistVisitType = typeof SpecialistVisitTypeSchema.Type
+export const SpecialistVisitTypeSchema = makeLiteral(specialistVisitTypes);
+export type SpecialistVisitType = typeof SpecialistVisitTypeSchema.Type;
 
-export const SymptomDurationSchema = makeLiteral(symptomDurations)
-export type SymptomDuration = typeof SymptomDurationSchema.Type
+export const SymptomDurationSchema = makeLiteral(symptomDurations);
+export type SymptomDuration = typeof SymptomDurationSchema.Type;
 
-export const ImagingTypeSchema = makeLiteral(imagingTypes)
-export type ImagingType = typeof ImagingTypeSchema.Type
+export const ImagingTypeSchema = makeLiteral(imagingTypes);
+export type ImagingType = typeof ImagingTypeSchema.Type;
 
-export const BodyAreaSchema = makeLiteral(bodyAreas)
-export type BodyArea = typeof BodyAreaSchema.Type
+export const BodyAreaSchema = makeLiteral(bodyAreas);
+export type BodyArea = typeof BodyAreaSchema.Type;
 
-export const FacilityTypeSchema = makeLiteral(facilityTypes)
-export type FacilityType = typeof FacilityTypeSchema.Type
+export const FacilityTypeSchema = makeLiteral(facilityTypes);
+export type FacilityType = typeof FacilityTypeSchema.Type;
 
-export const ViewerRoleSchema = Schema.Literal("patient", "provider")
-export type ViewerRole = typeof ViewerRoleSchema.Type
+export const ViewerRoleSchema = Schema.Literal("patient", "provider");
+export type ViewerRole = typeof ViewerRoleSchema.Type;
 
 export const SpecialistRequestDetailsSchema = Schema.Struct({
   visitType: SpecialistVisitTypeSchema,
@@ -66,8 +73,9 @@ export const SpecialistRequestDetailsSchema = Schema.Struct({
   additionalFlags: Schema.optional(
     Schema.Array(Schema.String.pipe(Schema.minLength(1), Schema.maxLength(50))),
   ),
-})
-export type SpecialistRequestDetails = typeof SpecialistRequestDetailsSchema.Type
+});
+export type SpecialistRequestDetails =
+  typeof SpecialistRequestDetailsSchema.Type;
 
 export const ImagingRequestDetailsSchema = Schema.Struct({
   imagingType: ImagingTypeSchema,
@@ -77,19 +85,22 @@ export const ImagingRequestDetailsSchema = Schema.Struct({
   additionalFlags: Schema.optional(
     Schema.Array(Schema.String.pipe(Schema.minLength(1), Schema.maxLength(50))),
   ),
-})
-export type ImagingRequestDetails = typeof ImagingRequestDetailsSchema.Type
+});
+export type ImagingRequestDetails = typeof ImagingRequestDetailsSchema.Type;
 
 export const StructuredDetailsSchema = Schema.Union(
   SpecialistRequestDetailsSchema,
   ImagingRequestDetailsSchema,
-)
-export type StructuredDetails = typeof StructuredDetailsSchema.Type
+);
+export type StructuredDetails = typeof StructuredDetailsSchema.Type;
 
 export const CreateCareRequestInputSchema = Schema.Struct({
   category: ProviderCategorySchema,
   title: Schema.String.pipe(Schema.minLength(3), Schema.maxLength(120)),
-  sanitizedSummary: Schema.String.pipe(Schema.minLength(10), Schema.maxLength(500)),
+  sanitizedSummary: Schema.String.pipe(
+    Schema.minLength(2),
+    Schema.maxLength(500),
+  ),
   targetBudgetCents: Schema.Number.pipe(Schema.int(), Schema.positive()),
   locationCity: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
   locationRegion: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
@@ -99,30 +110,33 @@ export const CreateCareRequestInputSchema = Schema.Struct({
   serviceMode: ServiceModeSchema,
   details: StructuredDetailsSchema,
   expiresAt: Schema.String,
-})
-export type CreateCareRequestInput = typeof CreateCareRequestInputSchema.Type
+});
+export type CreateCareRequestInput = typeof CreateCareRequestInputSchema.Type;
 
 export const BidInputSchema = Schema.Struct({
   requestId: Schema.String.pipe(Schema.minLength(1)),
   providerId: Schema.String.pipe(Schema.minLength(1)),
-  providerDisplayName: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(120)),
+  providerDisplayName: Schema.String.pipe(
+    Schema.minLength(1),
+    Schema.maxLength(120),
+  ),
   amountCents: Schema.Number.pipe(Schema.int(), Schema.positive()),
   availableDate: Schema.String,
   notes: Schema.optional(Schema.String.pipe(Schema.maxLength(280))),
-})
-export type BidInput = typeof BidInputSchema.Type
+});
+export type BidInput = typeof BidInputSchema.Type;
 
 export const WithdrawBidInputSchema = Schema.Struct({
   requestId: Schema.String.pipe(Schema.minLength(1)),
   providerId: Schema.String.pipe(Schema.minLength(1)),
-})
-export type WithdrawBidInput = typeof WithdrawBidInputSchema.Type
+});
+export type WithdrawBidInput = typeof WithdrawBidInputSchema.Type;
 
 export const AcceptBidInputSchema = Schema.Struct({
   requestId: Schema.String.pipe(Schema.minLength(1)),
   bidId: Schema.String.pipe(Schema.minLength(1)),
-})
-export type AcceptBidInput = typeof AcceptBidInputSchema.Type
+});
+export type AcceptBidInput = typeof AcceptBidInputSchema.Type;
 
 export const ViewerContextSchema = Schema.Struct({
   authUserId: Schema.String.pipe(Schema.minLength(1)),
@@ -130,8 +144,8 @@ export const ViewerContextSchema = Schema.Struct({
   patientId: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
   providerId: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
   email: Schema.optional(Schema.String),
-})
-export type ViewerContext = typeof ViewerContextSchema.Type
+});
+export type ViewerContext = typeof ViewerContextSchema.Type;
 
 export const PatientProfileSchema = Schema.Struct({
   id: Schema.String,
@@ -140,8 +154,8 @@ export const PatientProfileSchema = Schema.Struct({
   displayName: Schema.String,
   locationCity: Schema.String,
   locationRegion: Schema.String,
-})
-export type PatientProfile = typeof PatientProfileSchema.Type
+});
+export type PatientProfile = typeof PatientProfileSchema.Type;
 
 export const ProviderProfileSchema = Schema.Struct({
   id: Schema.String,
@@ -152,8 +166,8 @@ export const ProviderProfileSchema = Schema.Struct({
   verificationStatus: ProviderVerificationStatusSchema,
   verificationMode: ProviderVerificationModeSchema,
   categories: Schema.Array(ProviderCategorySchema),
-})
-export type ProviderProfile = typeof ProviderProfileSchema.Type
+});
+export type ProviderProfile = typeof ProviderProfileSchema.Type;
 
 export const AppSessionSchema = Schema.Struct({
   mode: Schema.Literal("demo"),
@@ -162,44 +176,51 @@ export const AppSessionSchema = Schema.Struct({
   role: Schema.optional(ViewerRoleSchema),
   patientProfile: Schema.optional(PatientProfileSchema),
   providerProfile: Schema.optional(ProviderProfileSchema),
-})
-export type AppSession = typeof AppSessionSchema.Type
+});
+export type AppSession = typeof AppSessionSchema.Type;
 
 export const SessionResponseSchema = Schema.Struct({
   ok: Schema.Boolean,
   session: AppSessionSchema,
-})
-export type SessionResponse = typeof SessionResponseSchema.Type
+});
+export type SessionResponse = typeof SessionResponseSchema.Type;
 
 export const PatientOnboardingInputSchema = Schema.Struct({
   displayName: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
   email: Schema.String.pipe(Schema.minLength(3), Schema.maxLength(120)),
   locationCity: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
   locationRegion: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
-})
-export type PatientOnboardingInput = typeof PatientOnboardingInputSchema.Type
+});
+export type PatientOnboardingInput = typeof PatientOnboardingInputSchema.Type;
 
 export const ProviderOnboardingInputSchema = Schema.Struct({
   displayName: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
   email: Schema.String.pipe(Schema.minLength(3), Schema.maxLength(120)),
-  licenseRegion: Schema.optional(Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80))),
-  categories: Schema.Array(ProviderCategorySchema).pipe(Schema.minItems(1), Schema.maxItems(2)),
-})
-export type ProviderOnboardingInput = typeof ProviderOnboardingInputSchema.Type
+  licenseRegion: Schema.optional(
+    Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
+  ),
+  categories: Schema.Array(ProviderCategorySchema).pipe(
+    Schema.minItems(1),
+    Schema.maxItems(2),
+  ),
+});
+export type ProviderOnboardingInput = typeof ProviderOnboardingInputSchema.Type;
 
 export const PatientOnboardingResponseSchema = Schema.Struct({
   ok: Schema.Boolean,
   profile: PatientProfileSchema,
   session: AppSessionSchema,
-})
-export type PatientOnboardingResponse = typeof PatientOnboardingResponseSchema.Type
+});
+export type PatientOnboardingResponse =
+  typeof PatientOnboardingResponseSchema.Type;
 
 export const ProviderOnboardingResponseSchema = Schema.Struct({
   ok: Schema.Boolean,
   profile: ProviderProfileSchema,
   session: AppSessionSchema,
-})
-export type ProviderOnboardingResponse = typeof ProviderOnboardingResponseSchema.Type
+});
+export type ProviderOnboardingResponse =
+  typeof ProviderOnboardingResponseSchema.Type;
 
 export const RequestSummarySchema = Schema.Struct({
   id: Schema.String,
@@ -215,32 +236,33 @@ export const RequestSummarySchema = Schema.Struct({
   serviceMode: ServiceModeSchema,
   status: RequestStatusSchema,
   expiresAt: Schema.String,
-})
-export type RequestSummary = typeof RequestSummarySchema.Type
+});
+export type RequestSummary = typeof RequestSummarySchema.Type;
 
 export const CreateCareRequestResponseSchema = Schema.Struct({
   ok: Schema.Boolean,
   item: RequestSummarySchema,
-})
-export type CreateCareRequestResponse = typeof CreateCareRequestResponseSchema.Type
+});
+export type CreateCareRequestResponse =
+  typeof CreateCareRequestResponseSchema.Type;
 
 export const RequestSummaryResponseSchema = Schema.Struct({
   ok: Schema.Boolean,
   item: RequestSummarySchema,
-})
-export type RequestSummaryResponse = typeof RequestSummaryResponseSchema.Type
+});
+export type RequestSummaryResponse = typeof RequestSummaryResponseSchema.Type;
 
 export const RequestListResponseSchema = Schema.Struct({
   items: Schema.Array(RequestSummarySchema),
   filters: Schema.Array(ProviderCategorySchema),
-})
-export type RequestListResponse = typeof RequestListResponseSchema.Type
+});
+export type RequestListResponse = typeof RequestListResponseSchema.Type;
 
 export const RoomConnectionResponseSchema = Schema.Struct({
   requestId: Schema.String,
   websocketUrl: Schema.String,
-})
-export type RoomConnectionResponse = typeof RoomConnectionResponseSchema.Type
+});
+export type RoomConnectionResponse = typeof RoomConnectionResponseSchema.Type;
 
 export const ProviderLeaderboardBidSchema = Schema.Struct({
   bidId: Schema.String,
@@ -250,8 +272,8 @@ export const ProviderLeaderboardBidSchema = Schema.Struct({
   notes: Schema.optional(Schema.String),
   isYourBid: Schema.Boolean,
   status: BidStatusSchema,
-})
-export type ProviderLeaderboardBid = typeof ProviderLeaderboardBidSchema.Type
+});
+export type ProviderLeaderboardBid = typeof ProviderLeaderboardBidSchema.Type;
 
 export const PatientLeaderboardBidSchema = Schema.Struct({
   bidId: Schema.String,
@@ -264,11 +286,11 @@ export const PatientLeaderboardBidSchema = Schema.Struct({
   providerRating: Schema.optional(Schema.Number),
   providerVerificationStatus: ProviderVerificationStatusSchema,
   status: BidStatusSchema,
-})
-export type PatientLeaderboardBid = typeof PatientLeaderboardBidSchema.Type
+});
+export type PatientLeaderboardBid = typeof PatientLeaderboardBidSchema.Type;
 
-export const RoomEventTypeSchema = makeLiteral(requestEventTypes)
-export type RoomEventType = typeof RoomEventTypeSchema.Type
+export const RoomEventTypeSchema = makeLiteral(requestEventTypes);
+export type RoomEventType = typeof RoomEventTypeSchema.Type;
 
 export const ConnectedPayloadSchema = Schema.Struct({
   request: RequestSummarySchema,
@@ -276,14 +298,14 @@ export const ConnectedPayloadSchema = Schema.Struct({
   leaderboard: Schema.Array(
     Schema.Union(PatientLeaderboardBidSchema, ProviderLeaderboardBidSchema),
   ),
-})
+});
 
 export const BidChangedPayloadSchema = Schema.Struct({
   requestStatus: RequestStatusSchema,
   leaderboard: Schema.Array(
     Schema.Union(PatientLeaderboardBidSchema, ProviderLeaderboardBidSchema),
   ),
-})
+});
 
 export const BidAcceptedPayloadSchema = Schema.Struct({
   requestStatus: RequestStatusSchema,
@@ -291,19 +313,19 @@ export const BidAcceptedPayloadSchema = Schema.Struct({
   leaderboard: Schema.Array(
     Schema.Union(PatientLeaderboardBidSchema, ProviderLeaderboardBidSchema),
   ),
-})
+});
 
 export const RequestExpiredPayloadSchema = Schema.Struct({
   requestStatus: RequestStatusSchema,
   leaderboard: Schema.Array(
     Schema.Union(PatientLeaderboardBidSchema, ProviderLeaderboardBidSchema),
   ),
-})
+});
 
 export const ErrorPayloadSchema = Schema.Struct({
   code: Schema.String,
   message: Schema.String,
-})
+});
 
 export const RequestRoomSnapshotSchema = Schema.Struct({
   requestId: Schema.String,
@@ -320,31 +342,32 @@ export const RequestRoomSnapshotSchema = Schema.Struct({
       notes: Schema.optional(Schema.String),
     }),
   ),
-})
-export type RequestRoomSnapshot = typeof RequestRoomSnapshotSchema.Type
+});
+export type RequestRoomSnapshot = typeof RequestRoomSnapshotSchema.Type;
 
 export const BidMutationResponseSchema = Schema.Struct({
   ok: Schema.Boolean,
   snapshot: RequestRoomSnapshotSchema,
-})
-export type BidMutationResponse = typeof BidMutationResponseSchema.Type
+});
+export type BidMutationResponse = typeof BidMutationResponseSchema.Type;
 
 export const RequestResolutionResponseSchema = Schema.Struct({
   ok: Schema.Boolean,
   snapshot: RequestRoomSnapshotSchema,
-})
-export type RequestResolutionResponse = typeof RequestResolutionResponseSchema.Type
+});
+export type RequestResolutionResponse =
+  typeof RequestResolutionResponseSchema.Type;
 
 export const RoomSnapshotMessageSchema = Schema.Struct({
   type: Schema.Literal("snapshot"),
   snapshot: RequestRoomSnapshotSchema,
-})
-export type RoomSnapshotMessage = typeof RoomSnapshotMessageSchema.Type
+});
+export type RoomSnapshotMessage = typeof RoomSnapshotMessageSchema.Type;
 
 export const RoomEventSchema = Schema.Struct({
   type: RoomEventTypeSchema,
   requestId: Schema.String,
   timestamp: Schema.String,
   payload: Schema.Unknown,
-})
-export type RoomEvent = typeof RoomEventSchema.Type
+});
+export type RoomEvent = typeof RoomEventSchema.Type;

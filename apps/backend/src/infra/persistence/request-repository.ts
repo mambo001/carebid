@@ -48,113 +48,98 @@ const query = <Result>(fn: () => Promise<Result>): Effect.Effect<Result, Databas
 export const makePrismaRequestRepository = (databaseUrl: string): RequestRepository => {
   const prisma = createPrismaClient(databaseUrl)
 
-  const ensuring = <R, E>(effect: Effect.Effect<R, E>) =>
-    effect.pipe(Effect.ensuring(Effect.promise(() => prisma.$disconnect())))
-
   return {
     listRequests: () =>
-      ensuring(
-        Effect.gen(function* () {
-          const requests = yield* query(() =>
-            prisma.careRequest.findMany({ orderBy: { createdAt: "desc" } }),
-          )
-          return requests.map(mapRequestSummary)
-        }),
-      ),
+      Effect.gen(function* () {
+        const requests = yield* query(() =>
+          prisma.careRequest.findMany({ orderBy: { createdAt: "desc" } }),
+        )
+        return requests.map(mapRequestSummary)
+      }),
 
     getRequest: (requestId) =>
-      ensuring(
-        Effect.gen(function* () {
-          const request = yield* query(() =>
-            prisma.careRequest.findUnique({ where: { id: requestId } }),
-          )
+      Effect.gen(function* () {
+        const request = yield* query(() =>
+          prisma.careRequest.findUnique({ where: { id: requestId } }),
+        )
 
-          if (!request) {
-            return yield* Effect.fail(new RequestNotFoundError({ message: `Request ${requestId} not found` }))
-          }
+        if (!request) {
+          return yield* Effect.fail(new RequestNotFoundError({ message: `Request ${requestId} not found` }))
+        }
 
-          return mapRequestSummary(request)
-        }),
-      ),
+        return mapRequestSummary(request)
+      }),
 
     createRequest: (input: CreateCareRequestInput) =>
-      ensuring(
-        Effect.gen(function* () {
-          const patient = yield* query(() =>
-            prisma.patient.upsert({
-              where: { authUserId: demoAuthUserId },
-              update: {},
-              create: {
-                authUserId: demoAuthUserId,
-                email: demoEmail,
-                displayName: "Demo Patient",
-                locationCity: input.locationCity,
-                locationRegion: input.locationRegion,
-              },
-            }),
-          )
+      Effect.gen(function* () {
+        const patient = yield* query(() =>
+          prisma.patient.upsert({
+            where: { authUserId: demoAuthUserId },
+            update: {},
+            create: {
+              authUserId: demoAuthUserId,
+              email: demoEmail,
+              displayName: "Demo Patient",
+              locationCity: input.locationCity,
+              locationRegion: input.locationRegion,
+            },
+          }),
+        )
 
-          const request = yield* query(() =>
-            prisma.careRequest.create({
-              data: {
-                patientId: patient.id,
-                category: input.category,
-                title: input.title,
-                sanitizedSummary: input.sanitizedSummary,
-                targetBudgetCents: input.targetBudgetCents,
-                locationCity: input.locationCity,
-                locationRegion: input.locationRegion,
-                preferredStartDate: new Date(input.preferredStartDate),
-                preferredEndDate: new Date(input.preferredEndDate),
-                urgency: input.urgency,
-                serviceMode: input.serviceMode,
-                details: input.details,
-                status: "draft",
-                expiresAt: new Date(input.expiresAt),
-              },
-            }),
-          )
+        const request = yield* query(() =>
+          prisma.careRequest.create({
+            data: {
+              patientId: patient.id,
+              category: input.category,
+              title: input.title,
+              sanitizedSummary: input.sanitizedSummary,
+              targetBudgetCents: input.targetBudgetCents,
+              locationCity: input.locationCity,
+              locationRegion: input.locationRegion,
+              preferredStartDate: new Date(input.preferredStartDate),
+              preferredEndDate: new Date(input.preferredEndDate),
+              urgency: input.urgency,
+              serviceMode: input.serviceMode,
+              details: input.details,
+              status: "draft",
+              expiresAt: new Date(input.expiresAt),
+            },
+          }),
+        )
 
-          return mapRequestSummary(request)
-        }),
-      ),
+        return mapRequestSummary(request)
+      }),
 
     openRequest: (requestId) =>
-      ensuring(
-        query(() =>
-          prisma.careRequest.update({ where: { id: requestId }, data: { status: "open" } }),
-        ).pipe(
-          Effect.map(mapRequestSummary),
-          Effect.catchTag("DatabaseError", (e) =>
-            Effect.fail(new RequestNotFoundError({ message: e.message })),
-          ),
+      query(() =>
+        prisma.careRequest.update({ where: { id: requestId }, data: { status: "open" } }),
+      ).pipe(
+        Effect.map(mapRequestSummary),
+        Effect.catchTag("DatabaseError", (e) =>
+          Effect.fail(new RequestNotFoundError({ message: e.message })),
         ),
       ),
 
     markRequestAwarded: (requestId, bidId) =>
-      ensuring(
-        query(() =>
-          prisma.careRequest.update({
-            where: { id: requestId },
-            data: { status: "awarded", awardedBidId: bidId },
-          }),
-        ).pipe(
-          Effect.map(mapRequestSummary),
-          Effect.catchTag("DatabaseError", (e) =>
-            Effect.fail(new RequestNotFoundError({ message: e.message })),
-          ),
+      query(() =>
+        prisma.careRequest.update({
+          where: { id: requestId },
+          data: { status: "awarded", awardedBidId: bidId },
+        }),
+      ).pipe(
+        Effect.map(mapRequestSummary),
+        Effect.catchTag("DatabaseError", (e) =>
+          Effect.fail(new RequestNotFoundError({ message: e.message })),
         ),
       ),
 
     markRequestExpired: (requestId) =>
-      ensuring(
-        query(() =>
-          prisma.careRequest.update({ where: { id: requestId }, data: { status: "expired" } }),
-        ).pipe(
-          Effect.map(mapRequestSummary),
-          Effect.catchTag("DatabaseError", (e) =>
-            Effect.fail(new RequestNotFoundError({ message: e.message })),
-          ),
+      query(() =>
+        prisma.careRequest.update({ where: { id: requestId }, data: { status: "expired" } }),
+      ).pipe(
+        Effect.map(mapRequestSummary),
+        Effect.catchTag("DatabaseError", (e) =>
+          Effect.fail(new RequestNotFoundError({ message: e.message })),
         ),
       ),
   }
