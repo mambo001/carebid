@@ -12,7 +12,6 @@ import type {
 import { DatabaseError } from "../../domain/errors"
 import { SessionRepository } from "../../domain/ports/session-repository"
 import { createPrismaClient } from "../../lib/db"
-import { getDemoSession, onboardPatient, onboardProvider, switchDemoRole } from "../../lib/demo-auth"
 
 const demoAuthUserId = "demo-user-001"
 const demoEmail = "demo@carebid.local"
@@ -54,20 +53,13 @@ const mapProviderProfile = (provider: {
 })
 
 const withPrisma = <Result>(
-  env: Env,
+  prisma: PrismaClient,
   fn: (prisma: PrismaClient) => Promise<Result>,
-): Effect.Effect<Result | undefined, DatabaseError> => {
-  if (!env.DATABASE_URL) {
-    return Effect.succeed(undefined)
-  }
-
-  const prisma = createPrismaClient(env.DATABASE_URL)
-
-  return Effect.tryPromise({
+): Effect.Effect<Result, DatabaseError> =>
+  Effect.tryPromise({
     try: () => fn(prisma),
     catch: (error) => new DatabaseError({ message: String(error) }),
   }).pipe(Effect.ensuring(Effect.promise(() => prisma.$disconnect())))
-}
 
 const buildSession = (prisma: PrismaClient): Promise<AppSession> =>
   Promise.all([
@@ -90,17 +82,15 @@ const buildSession = (prisma: PrismaClient): Promise<AppSession> =>
     providerProfile: provider ? mapProviderProfile(provider) : undefined,
   }))
 
-const makeLiveSessionRepository = (env: Env): SessionRepository => ({
-  getSession: () =>
-    Effect.gen(function* () {
-      const persisted = yield* withPrisma(env, buildSession)
-      return persisted ?? getDemoSession()
-    }),
+export const makePrismaSessionRepository = (databaseUrl: string): SessionRepository => {
+  const prisma = createPrismaClient(databaseUrl)
 
-  switchRole: (role) =>
-    Effect.gen(function* () {
-      const persisted = yield* withPrisma(env, async (prisma) => {
-        await prisma.demoSession.upsert({
+  return {
+    getSession: () => withPrisma(prisma, buildSession),
+
+    switchRole: (role) =>
+      withPrisma(prisma, async (db) => {
+        await db.demoSession.upsert({
           where: { authUserId: demoAuthUserId },
           update: { activeRole: (role ?? null) as ViewerRole | null },
           create: {
@@ -109,17 +99,12 @@ const makeLiveSessionRepository = (env: Env): SessionRepository => ({
             activeRole: (role ?? null) as ViewerRole | null,
           },
         })
+        return buildSession(db)
+      }),
 
-        return buildSession(prisma)
-      })
-
-      return persisted ?? switchDemoRole(role)
-    }),
-
-  savePatient: (input: PatientOnboardingInput) =>
-    Effect.gen(function* () {
-      const persisted = yield* withPrisma(env, async (prisma) => {
-        const patient = await prisma.patient.upsert({
+    savePatient: (input: PatientOnboardingInput) =>
+      withPrisma(prisma, async (db) => {
+        const patient = await db.patient.upsert({
           where: { authUserId: demoAuthUserId },
           update: {
             email: input.email,
@@ -136,25 +121,18 @@ const makeLiveSessionRepository = (env: Env): SessionRepository => ({
           },
         })
 
-        await prisma.demoSession.upsert({
+        await db.demoSession.upsert({
           where: { authUserId: demoAuthUserId },
           update: { email: input.email, activeRole: "patient" },
           create: { authUserId: demoAuthUserId, email: input.email, activeRole: "patient" },
         })
 
-        return {
-          profile: mapPatientProfile(patient),
-          session: await buildSession(prisma),
-        }
-      })
+        return { profile: mapPatientProfile(patient), session: await buildSession(db) }
+      }),
 
-      return persisted ?? onboardPatient(input)
-    }),
-
-  saveProvider: (input: ProviderOnboardingInput) =>
-    Effect.gen(function* () {
-      const persisted = yield* withPrisma(env, async (prisma) => {
-        const provider = await prisma.provider.upsert({
+    saveProvider: (input: ProviderOnboardingInput) =>
+      withPrisma(prisma, async (db) => {
+        const provider = await db.provider.upsert({
           where: { authUserId: demoAuthUserId },
           update: {
             email: input.email,
@@ -173,34 +151,29 @@ const makeLiveSessionRepository = (env: Env): SessionRepository => ({
           },
         })
 
-        await prisma.providerCategoryAssignment.deleteMany({ where: { providerId: provider.id } })
+        await db.providerCategoryAssignment.deleteMany({ where: { providerId: provider.id } })
 
         if (input.categories.length > 0) {
-          await prisma.providerCategoryAssignment.createMany({
+          await db.providerCategoryAssignment.createMany({
             data: input.categories.map((category) => ({ providerId: provider.id, category })),
           })
         }
 
-        await prisma.demoSession.upsert({
+        await db.demoSession.upsert({
           where: { authUserId: demoAuthUserId },
           update: { email: input.email, activeRole: "provider" },
           create: { authUserId: demoAuthUserId, email: input.email, activeRole: "provider" },
         })
 
-        const providerWithCategories = await prisma.provider.findUniqueOrThrow({
+        const providerWithCategories = await db.provider.findUniqueOrThrow({
           where: { id: provider.id },
           include: { categories: true },
         })
 
-        return {
-          profile: mapProviderProfile(providerWithCategories),
-          session: await buildSession(prisma),
-        }
-      })
+        return { profile: mapProviderProfile(providerWithCategories), session: await buildSession(db) }
+      }),
+  }
+}
 
-      return persisted ?? onboardProvider(input)
-    }),
-})
-
-export const makeSessionRepositoryLayer = (env: Env) =>
-  Layer.succeed(SessionRepository, makeLiveSessionRepository(env))
+export const makePrismaSessionRepositoryLayer = (databaseUrl: string) =>
+  Layer.succeed(SessionRepository, makePrismaSessionRepository(databaseUrl))

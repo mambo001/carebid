@@ -1,5 +1,23 @@
 import { Schema } from "effect"
 
+export class RoomBid extends Schema.Class<RoomBid>("RoomBid")({
+  bidId: Schema.String,
+  providerId: Schema.String,
+  providerDisplayName: Schema.String,
+  amountCents: Schema.Number,
+  availableDate: Schema.String,
+  notes: Schema.optional(Schema.String),
+  status: Schema.Literal("active", "withdrawn"),
+}) {}
+
+export class RoomState extends Schema.Class<RoomState>("RoomState")({
+  requestId: Schema.String,
+  status: Schema.Literal("draft", "open", "awarded", "expired"),
+  awardedBidId: Schema.optional(Schema.String),
+  connectedViewers: Schema.Number,
+  bids: Schema.Array(RoomBid),
+}) {}
+
 export class CareRequest extends Schema.Class<CareRequest>("CareRequest")({
   id: Schema.String,
   category: Schema.Literal("specialist_consult", "imaging"),

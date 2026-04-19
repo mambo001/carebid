@@ -1,35 +1,26 @@
+import { Effect } from "effect"
+import * as Schema from "@effect/schema/Schema"
+
 import {
   AcceptBidInputSchema,
   BidInputSchema,
   BidMutationResponseSchema,
   RequestResolutionResponseSchema,
-  RequestRoomSnapshotSchema,
-  RoomSnapshotMessageSchema,
   WithdrawBidInputSchema,
 } from "@carebid/shared"
-import * as Schema from "@effect/schema/Schema"
 
+import { acceptBidCommand } from "./application/commands/room/accept-bid"
+import { expireRoomCommand } from "./application/commands/room/expire-room"
+import { placeBidCommand } from "./application/commands/room/place-bid"
+import { syncRoomStatusCommand } from "./application/commands/room/sync-room-status"
+import { connectViewerCommand, disconnectViewerCommand } from "./application/commands/room/viewer-presence"
+import { withdrawBidCommand } from "./application/commands/room/withdraw-bid"
+import { getRoomSnapshotQuery } from "./application/queries/room/get-room-snapshot"
 import { createApp } from "./app"
-
-type RoomBid = {
-  bidId: string
-  providerId: string
-  providerDisplayName: string
-  amountCents: number
-  availableDate: string
-  notes?: string
-  status: "active" | "withdrawn"
-}
-
-type RoomState = {
-  requestId: string
-  status: "draft" | "open" | "awarded" | "expired"
-  awardedBidId?: string
-  connectedViewers: number
-  bids: RoomBid[]
-}
-
-const roomStateKey = "room-state"
+import { RoomNotOpenError } from "./domain/errors"
+import { RoomGateway } from "./domain/ports/room-gateway"
+import type { RoomState } from "./domain/entities"
+import { makeDurableObjectRoomGatewayLayer, createRoomSnapshot, createSnapshotMessage } from "./infra/room/durable-object-room-gateway"
 
 export class RequestRoomDurableObject {
   private sessions = new Set<WebSocket>()
@@ -39,122 +30,44 @@ export class RequestRoomDurableObject {
     readonly env: Env,
   ) {}
 
-  private async getRoomState(requestId: string): Promise<RoomState> {
-    return this.getRoomStateWithFallback(requestId, "open")
+  private run<Result, E>(
+    effect: Effect.Effect<Result, E, RoomGateway>,
+  ): Promise<Result> {
+    const layer = makeDurableObjectRoomGatewayLayer(this.state, this.sessions)
+    return Effect.runPromise(Effect.provide(effect, layer))
   }
 
-  private async getRoomStateWithFallback(
-    requestId: string,
-    initialStatus: RoomState["status"],
-  ): Promise<RoomState> {
-    const stored = await this.state.storage.get<RoomState>(roomStateKey)
-
-    return (
-      stored ?? {
-        requestId,
-        status: initialStatus,
-        awardedBidId: undefined,
-        connectedViewers: 0,
-        bids: [],
-      }
-    )
-  }
-
-  private createSnapshot(roomState: RoomState) {
-    return Schema.decodeUnknownSync(RequestRoomSnapshotSchema)({
-      requestId: roomState.requestId,
-      status: roomState.status,
-      awardedBidId: roomState.awardedBidId,
-      connectedViewers: roomState.connectedViewers,
-      leaderboard: roomState.bids
-        .filter((bid) => bid.status === "active")
-        .sort((left, right) => left.amountCents - right.amountCents)
-        .map((bid) => ({
-          bidId: bid.bidId,
-          providerId: bid.providerId,
-          providerDisplayName: bid.providerDisplayName,
-          amountCents: bid.amountCents,
-          availableDate: bid.availableDate,
-          notes: bid.notes,
-        })),
-    })
-  }
-
-  private requestClosedResponse(roomState: RoomState) {
+  private closedResponse(state: RoomState) {
     return Response.json(
-      {
-        ok: false,
-        error: "Request is no longer open",
-        snapshot: this.createSnapshot(roomState),
-      },
+      { ok: false, error: "Request is no longer open", snapshot: createRoomSnapshot(state) },
       { status: 409 },
     )
   }
 
-  private async persistAndBroadcast(roomState: RoomState) {
-    await this.state.storage.put(roomStateKey, roomState)
-
-    const message = JSON.stringify(
-      Schema.decodeUnknownSync(RoomSnapshotMessageSchema)({
-        type: "snapshot",
-        snapshot: this.createSnapshot(roomState),
-      }),
-    )
-
-    for (const session of this.sessions) {
-      try {
-        session.send(message)
-      } catch {
-        this.sessions.delete(session)
-      }
-    }
-  }
-
   private async connectWebSocket(requestId: string): Promise<Response> {
-    const roomState = await this.getRoomState(requestId)
+    const state = await this.run(connectViewerCommand(requestId))
     const pair = new WebSocketPair()
     const client = pair[0]
     const server = pair[1]
 
     server.accept()
     this.sessions.add(server)
-
-    roomState.connectedViewers += 1
-    await this.persistAndBroadcast(roomState)
+    server.send(createSnapshotMessage(state))
 
     server.addEventListener("close", () => {
       this.sessions.delete(server)
-      void this.state.blockConcurrencyWhile(async () => {
-        const current = await this.getRoomState(requestId)
-        current.connectedViewers = Math.max(0, current.connectedViewers - 1)
-        await this.persistAndBroadcast(current)
-      })
+      void this.state.blockConcurrencyWhile(() => this.run(disconnectViewerCommand(requestId)))
     })
 
-    server.send(
-      JSON.stringify(
-        Schema.decodeUnknownSync(RoomSnapshotMessageSchema)({
-          type: "snapshot",
-          snapshot: this.createSnapshot(roomState),
-        }),
-      ),
-    )
-
-    return new Response(null, {
-      status: 101,
-      webSocket: client,
-    })
+    return new Response(null, { status: 101, webSocket: client })
   }
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
     const requestId = url.searchParams.get("requestId") ?? this.state.id.toString()
-    const statusParam = url.searchParams.get("status")
+    const statusParam = url.searchParams.get("status") as RoomState["status"] | null
     const initialStatus: RoomState["status"] =
-      statusParam === "draft" ||
-      statusParam === "open" ||
-      statusParam === "awarded" ||
-      statusParam === "expired"
+      statusParam === "draft" || statusParam === "open" || statusParam === "awarded" || statusParam === "expired"
         ? statusParam
         : "open"
 
@@ -163,125 +76,67 @@ export class RequestRoomDurableObject {
     }
 
     if (request.method === "GET" && url.pathname === "/snapshot") {
-      const snapshot = this.createSnapshot(await this.getRoomStateWithFallback(requestId, initialStatus))
-
-      return Response.json(snapshot)
+      const state = await this.run(getRoomSnapshotQuery(requestId, initialStatus))
+      return Response.json(createRoomSnapshot(state))
     }
 
     if (request.method === "POST" && url.pathname === "/status/sync") {
-      const roomState = await this.getRoomStateWithFallback(requestId, initialStatus)
       const body = Schema.decodeUnknownSync(
-        Schema.Struct({
-          status: Schema.Literal("draft", "open", "awarded", "expired"),
-        }),
+        Schema.Struct({ status: Schema.Literal("draft", "open", "awarded", "expired") }),
       )(await request.json())
-
-      roomState.status = body.status
-      await this.persistAndBroadcast(roomState)
-
-      return Response.json(this.createSnapshot(roomState))
+      const state = await this.run(syncRoomStatusCommand(requestId, body.status))
+      return Response.json(createRoomSnapshot(state))
     }
 
     if (request.method === "POST" && url.pathname === "/bids/place") {
       const input = Schema.decodeUnknownSync(BidInputSchema)(await request.json())
-      const roomState = await this.getRoomState(requestId)
-
-      if (roomState.status !== "open") {
-        return this.requestClosedResponse(roomState)
+      try {
+        const state = await this.run(placeBidCommand(input))
+        return Response.json(Schema.decodeUnknownSync(BidMutationResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))
+      } catch (error) {
+        if (error instanceof RoomNotOpenError) {
+          return this.closedResponse(await this.run(getRoomSnapshotQuery(requestId)))
+        }
+        throw error
       }
-
-      const existingBidIndex = roomState.bids.findIndex((bid) => bid.providerId === input.providerId)
-
-      const nextBid: RoomBid = {
-        bidId: existingBidIndex >= 0 ? roomState.bids[existingBidIndex].bidId : `bid-${crypto.randomUUID()}`,
-        providerId: input.providerId,
-        providerDisplayName: input.providerDisplayName,
-        amountCents: input.amountCents,
-        availableDate: input.availableDate,
-        notes: input.notes,
-        status: "active",
-      }
-
-      if (existingBidIndex >= 0) {
-        roomState.bids[existingBidIndex] = nextBid
-      } else {
-        roomState.bids.push(nextBid)
-      }
-
-      await this.persistAndBroadcast(roomState)
-
-      return Response.json(
-        Schema.decodeUnknownSync(BidMutationResponseSchema)({
-          ok: true,
-          snapshot: this.createSnapshot(roomState),
-        }),
-      )
     }
 
     if (request.method === "POST" && url.pathname === "/bids/withdraw") {
       const input = Schema.decodeUnknownSync(WithdrawBidInputSchema)(await request.json())
-      const roomState = await this.getRoomState(requestId)
-
-      if (roomState.status !== "open") {
-        return this.requestClosedResponse(roomState)
+      try {
+        const state = await this.run(withdrawBidCommand(input))
+        return Response.json(Schema.decodeUnknownSync(BidMutationResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))
+      } catch (error) {
+        if (error instanceof RoomNotOpenError) {
+          return this.closedResponse(await this.run(getRoomSnapshotQuery(requestId)))
+        }
+        throw error
       }
-
-      roomState.bids = roomState.bids.map((bid) =>
-        bid.providerId === input.providerId ? { ...bid, status: "withdrawn" } : bid,
-      )
-
-      await this.persistAndBroadcast(roomState)
-
-      return Response.json(
-        Schema.decodeUnknownSync(BidMutationResponseSchema)({
-          ok: true,
-          snapshot: this.createSnapshot(roomState),
-        }),
-      )
     }
 
     if (request.method === "POST" && url.pathname === "/bids/accept") {
       const input = Schema.decodeUnknownSync(AcceptBidInputSchema)(await request.json())
-      const roomState = await this.getRoomState(requestId)
-
-      if (roomState.status !== "open") {
-        return this.requestClosedResponse(roomState)
+      try {
+        const state = await this.run(acceptBidCommand(input))
+        return Response.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))
+      } catch (error) {
+        if (error instanceof RoomNotOpenError) {
+          return this.closedResponse(await this.run(getRoomSnapshotQuery(requestId)))
+        }
+        throw error
       }
-
-      roomState.status = "awarded"
-      roomState.awardedBidId = input.bidId
-      roomState.bids = roomState.bids.map((bid) =>
-        bid.bidId === input.bidId ? bid : { ...bid, status: "withdrawn" },
-      )
-
-      await this.persistAndBroadcast(roomState)
-
-      return Response.json(
-        Schema.decodeUnknownSync(RequestResolutionResponseSchema)({
-          ok: true,
-          snapshot: this.createSnapshot(roomState),
-        }),
-      )
     }
 
     if (request.method === "POST" && url.pathname === "/expire") {
-      const roomState = await this.getRoomState(requestId)
-
-      if (roomState.status !== "open") {
-        return this.requestClosedResponse(roomState)
+      try {
+        const state = await this.run(expireRoomCommand(requestId))
+        return Response.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))
+      } catch (error) {
+        if (error instanceof RoomNotOpenError) {
+          return this.closedResponse(await this.run(getRoomSnapshotQuery(requestId)))
+        }
+        throw error
       }
-
-      roomState.status = "expired"
-      roomState.bids = roomState.bids.map((bid) => ({ ...bid, status: "withdrawn" }))
-
-      await this.persistAndBroadcast(roomState)
-
-      return Response.json(
-        Schema.decodeUnknownSync(RequestResolutionResponseSchema)({
-          ok: true,
-          snapshot: this.createSnapshot(roomState),
-        }),
-      )
     }
 
     return new Response("Not implemented", { status: 501 })
