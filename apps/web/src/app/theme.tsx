@@ -1,9 +1,9 @@
-import { alpha, createTheme } from "@mui/material/styles"
+import { alpha, createTheme } from "@mui/material/styles";
 
-const navy = "#355872"
-const sky = "#7AAACE"
-const mist = "#9CD5FF"
-const canvas = "#F7F8F0"
+const navy = "#355872";
+const sky = "#7AAACE";
+const mist = "#9CD5FF";
+const canvas = "#F7F8F0";
 
 export const appTheme = createTheme({
   palette: {
@@ -37,11 +37,7 @@ export const appTheme = createTheme({
     },
     divider: alpha(navy, 0.1),
   },
-  shape: {
-    borderRadius: 16,
-  },
   typography: {
-    fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     h1: {
       fontSize: "2.4rem",
       fontWeight: 700,
@@ -116,4 +112,4 @@ export const appTheme = createTheme({
       },
     },
   },
-})
+});
