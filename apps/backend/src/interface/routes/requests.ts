@@ -2,13 +2,14 @@ import { Effect, Either } from "effect"
 import { Hono } from "hono"
 import * as Schema from "@effect/schema/Schema"
 
+import { DatabaseError } from "../../domain/errors"
 import { createRequest } from "../../application/commands/create-request"
 import { markRequestAwarded } from "../../application/commands/mark-request-awarded"
 import { markRequestExpired } from "../../application/commands/mark-request-expired"
 import { openRequest } from "../../application/commands/open-request"
 import { getRequest } from "../../application/queries/get-request"
 import { listRequests } from "../../application/queries/list-requests"
-import { runAppEffect } from "../../app"
+import { handleAppErrors, runEffect } from "../../app"
 import {
   AcceptBidInputSchema,
   BidInputSchema,
@@ -28,41 +29,26 @@ export const createRequestRoutes = () => {
   const app = new Hono<{ Bindings: Env }>()
 
   app.get("/requests", (c) =>
-    runAppEffect(
+    runEffect(
       c.env,
-      listRequests(),
-      (items) =>
-        c.json(
-          Schema.decodeUnknownSync(RequestListResponseSchema)({
-            items,
-            filters: providerCategories,
-          }),
+      listRequests().pipe(
+        Effect.map((items) =>
+          c.json(Schema.decodeUnknownSync(RequestListResponseSchema)({ items, filters: providerCategories })),
         ),
+        handleAppErrors,
+      ),
     ),
   )
 
   app.post("/requests/validate", async (c) => {
-    const response = await Effect.runPromise(
-      Effect.gen(function* () {
-        const body = yield* Effect.tryPromise(() => c.req.json())
-        const decoded = Schema.decodeUnknownEither(CreateCareRequestInputSchema)(body)
+    const body = await c.req.json()
+    const decoded = Schema.decodeUnknownEither(CreateCareRequestInputSchema)(body)
 
-        if (Either.isLeft(decoded)) {
-          return c.json(
-            {
-              ok: false,
-              error: "Invalid request payload",
-              issue: decoded.left,
-            },
-            400,
-          )
-        }
+    if (Either.isLeft(decoded)) {
+      return c.json({ ok: false, error: "Invalid request payload", issue: decoded.left }, 400)
+    }
 
-        return c.json({ ok: true, item: decoded.right })
-      }),
-    )
-
-    return response
+    return c.json({ ok: true, item: decoded.right })
   })
 
   app.post("/requests", async (c) => {
@@ -70,74 +56,70 @@ export const createRequestRoutes = () => {
     const decoded = Schema.decodeUnknownEither(CreateCareRequestInputSchema)(body)
 
     if (Either.isLeft(decoded)) {
-      return c.json(
-        {
-          ok: false,
-          error: "Invalid request payload",
-          issue: decoded.left,
-        },
-        400,
-      )
+      return c.json({ ok: false, error: "Invalid request payload", issue: decoded.left }, 400)
     }
 
-    return runAppEffect(
+    return runEffect(
       c.env,
-      createRequest(decoded.right),
-      (item) =>
-        c.json(
-          Schema.decodeUnknownSync(CreateCareRequestResponseSchema)({
-            ok: true,
-            item,
-          }),
-          201,
+      createRequest(decoded.right).pipe(
+        Effect.map((item) =>
+          c.json(Schema.decodeUnknownSync(CreateCareRequestResponseSchema)({ ok: true, item }), 201),
         ),
+        handleAppErrors,
+      ),
     )
   })
 
   app.post("/requests/:requestId/open", (c) => {
     const requestId = c.req.param("requestId")
 
-    return runAppEffect(
+    return runEffect(
       c.env,
-      openRequest(requestId),
-      async (item) => {
-        const room = c.env.REQUEST_ROOM_DO.get(c.env.REQUEST_ROOM_DO.idFromName(requestId))
-        await room.fetch(`https://do.internal/status/sync?requestId=${requestId}`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({ status: item.status }),
-        })
-
-        return c.json(
-          Schema.decodeUnknownSync(RequestSummaryResponseSchema)({
-            ok: true,
-            item,
+      openRequest(requestId).pipe(
+        Effect.tap((item) =>
+          Effect.tryPromise({
+            try: () => {
+              const room = c.env.REQUEST_ROOM_DO.get(c.env.REQUEST_ROOM_DO.idFromName(requestId))
+              return room.fetch(`https://do.internal/status/sync?requestId=${requestId}`, {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ status: item.status }),
+              })
+            },
+            catch: () => new DatabaseError({ message: "Failed to sync room status" }),
           }),
-        )
-      },
+        ),
+        Effect.map((item) =>
+          c.json(Schema.decodeUnknownSync(RequestSummaryResponseSchema)({ ok: true, item })),
+        ),
+        handleAppErrors,
+      ),
     )
   })
 
   app.get("/requests/:requestId/room", (c) => {
     const requestId = c.req.param("requestId")
 
-    return runAppEffect(
+    return runEffect(
       c.env,
-      getRequest(requestId),
-      async (requestSummary) => {
-        const room = c.env.REQUEST_ROOM_DO.get(c.env.REQUEST_ROOM_DO.idFromName(requestId))
-        const snapshotUrl = new URL("https://do.internal/snapshot")
-        snapshotUrl.searchParams.set("requestId", requestId)
-        snapshotUrl.searchParams.set("status", requestSummary.status)
-
-        const response = await room.fetch(snapshotUrl.toString())
-        const json = await response.json()
-        const snapshot = Schema.decodeUnknownSync(RequestRoomSnapshotSchema)(json)
-
-        return c.json(snapshot)
-      },
+      getRequest(requestId).pipe(
+        Effect.flatMap((requestSummary) =>
+          Effect.tryPromise({
+            try: async () => {
+              const room = c.env.REQUEST_ROOM_DO.get(c.env.REQUEST_ROOM_DO.idFromName(requestId))
+              const snapshotUrl = new URL("https://do.internal/snapshot")
+              snapshotUrl.searchParams.set("requestId", requestId)
+              snapshotUrl.searchParams.set("status", requestSummary.status)
+              const response = await room.fetch(snapshotUrl.toString())
+              const json = await response.json()
+              return Schema.decodeUnknownSync(RequestRoomSnapshotSchema)(json)
+            },
+            catch: () => new DatabaseError({ message: "Failed to fetch room snapshot" }),
+          }),
+        ),
+        Effect.map((snapshot) => c.json(snapshot)),
+        handleAppErrors,
+      ),
     )
   })
 
@@ -160,9 +142,7 @@ export const createRequestRoutes = () => {
     const room = c.env.REQUEST_ROOM_DO.get(c.env.REQUEST_ROOM_DO.idFromName(requestId))
     const response = await room.fetch(`https://do.internal/bids/place?requestId=${requestId}`, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify(input),
     })
     const json = await response.json()
@@ -176,9 +156,7 @@ export const createRequestRoutes = () => {
     const room = c.env.REQUEST_ROOM_DO.get(c.env.REQUEST_ROOM_DO.idFromName(requestId))
     const response = await room.fetch(`https://do.internal/bids/withdraw?requestId=${requestId}`, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify(input),
     })
     const json = await response.json()
@@ -192,15 +170,16 @@ export const createRequestRoutes = () => {
     const room = c.env.REQUEST_ROOM_DO.get(c.env.REQUEST_ROOM_DO.idFromName(requestId))
     const response = await room.fetch(`https://do.internal/bids/accept?requestId=${requestId}`, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify(input),
     })
     const json = await response.json()
 
     if (response.ok) {
-      await runAppEffect(c.env, markRequestAwarded(requestId, input.bidId), () => Response.json({ ok: true }))
+      await runEffect(
+        c.env,
+        markRequestAwarded(requestId, input.bidId).pipe(handleAppErrors),
+      )
     }
 
     return c.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)(json), {
@@ -217,7 +196,10 @@ export const createRequestRoutes = () => {
     const json = await response.json()
 
     if (response.ok) {
-      await runAppEffect(c.env, markRequestExpired(requestId), () => Response.json({ ok: true }))
+      await runEffect(
+        c.env,
+        markRequestExpired(requestId).pipe(handleAppErrors),
+      )
     }
 
     return c.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)(json), {

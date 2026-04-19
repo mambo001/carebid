@@ -1,6 +1,8 @@
 import { Either } from "effect"
+import * as Schema from "@effect/schema/Schema"
 
 import type { BidInput, WithdrawBidInput, AcceptBidInput } from "@carebid/shared"
+import { RequestRoomSnapshotSchema, RoomSnapshotMessageSchema } from "@carebid/shared"
 
 import { RoomBid, RoomState } from "../entities"
 import { RoomNotOpenError } from "../errors"
@@ -97,3 +99,30 @@ export const incrementViewers = (state: RoomState): RoomState =>
 
 export const decrementViewers = (state: RoomState): RoomState =>
   new RoomState({ ...state, connectedViewers: Math.max(0, state.connectedViewers - 1) })
+
+export const createRoomSnapshot = (state: RoomState) =>
+  Schema.decodeUnknownSync(RequestRoomSnapshotSchema)({
+    requestId: state.requestId,
+    status: state.status,
+    awardedBidId: state.awardedBidId,
+    connectedViewers: state.connectedViewers,
+    leaderboard: state.bids
+      .filter((bid) => bid.status === "active")
+      .sort((a, b) => a.amountCents - b.amountCents)
+      .map((bid) => ({
+        bidId: bid.bidId,
+        providerId: bid.providerId,
+        providerDisplayName: bid.providerDisplayName,
+        amountCents: bid.amountCents,
+        availableDate: bid.availableDate,
+        notes: bid.notes,
+      })),
+  })
+
+export const createSnapshotMessage = (state: RoomState) =>
+  JSON.stringify(
+    Schema.decodeUnknownSync(RoomSnapshotMessageSchema)({
+      type: "snapshot",
+      snapshot: createRoomSnapshot(state),
+    }),
+  )

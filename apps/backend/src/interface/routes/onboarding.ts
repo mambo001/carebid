@@ -1,9 +1,10 @@
+import { Effect } from "effect"
 import { Hono } from "hono"
 import * as Schema from "@effect/schema/Schema"
 
 import { onboardPatient } from "../../application/commands/onboard-patient"
 import { onboardProvider } from "../../application/commands/onboard-provider"
-import { runAppEffect } from "../../app"
+import { handleAppErrors, runEffect } from "../../app"
 import {
   PatientOnboardingInputSchema,
   PatientOnboardingResponseSchema,
@@ -15,38 +16,36 @@ export const createOnboardingRoutes = () => {
   const app = new Hono<{ Bindings: Env }>()
 
   app.post("/onboarding/patient", async (c) => {
-    const body = await c.req.json()
-    const input = Schema.decodeUnknownSync(PatientOnboardingInputSchema)(body)
+    const input = Schema.decodeUnknownSync(PatientOnboardingInputSchema)(await c.req.json())
 
-    return runAppEffect(
+    return runEffect(
       c.env,
-      onboardPatient(input),
-      (result) =>
-        c.json(
-          Schema.decodeUnknownSync(PatientOnboardingResponseSchema)({
-            ok: true,
-            ...result,
-          }),
-          201,
+      onboardPatient(input).pipe(
+        Effect.map((result) =>
+          c.json(
+            Schema.decodeUnknownSync(PatientOnboardingResponseSchema)({ ok: true, ...result }),
+            201,
+          ),
         ),
+        handleAppErrors,
+      ),
     )
   })
 
   app.post("/onboarding/provider", async (c) => {
-    const body = await c.req.json()
-    const input = Schema.decodeUnknownSync(ProviderOnboardingInputSchema)(body)
+    const input = Schema.decodeUnknownSync(ProviderOnboardingInputSchema)(await c.req.json())
 
-    return runAppEffect(
+    return runEffect(
       c.env,
-      onboardProvider(input),
-      (result) =>
-        c.json(
-          Schema.decodeUnknownSync(ProviderOnboardingResponseSchema)({
-            ok: true,
-            ...result,
-          }),
-          201,
+      onboardProvider(input).pipe(
+        Effect.map((result) =>
+          c.json(
+            Schema.decodeUnknownSync(ProviderOnboardingResponseSchema)({ ok: true, ...result }),
+            201,
+          ),
         ),
+        handleAppErrors,
+      ),
     )
   })
 

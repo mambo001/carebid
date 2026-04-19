@@ -4,7 +4,8 @@ import { Hono } from "hono"
 import { connectViewerCommand, disconnectViewerCommand } from "./application/commands/room/viewer-presence"
 import { createApp } from "./app"
 import { RoomGateway } from "./domain/ports/room-gateway"
-import { makeDurableObjectRoomGatewayLayer, createSnapshotMessage } from "./infra/room/durable-object-room-gateway"
+import { createSnapshotMessage } from "./domain/room"
+import { makeDurableObjectRoomGatewayLayer } from "./infra/room/durable-object-room-gateway"
 import { createRoomRoutes } from "./interface/routes/room"
 
 export class RequestRoomDurableObject {

@@ -1,41 +1,11 @@
 import { Effect, Layer } from "effect"
-import * as Schema from "@effect/schema/Schema"
-
-import { RequestRoomSnapshotSchema, RoomSnapshotMessageSchema } from "@carebid/shared"
 
 import { RoomState } from "../../domain/entities"
 import { DatabaseError } from "../../domain/errors"
 import { RoomGateway } from "../../domain/ports/room-gateway"
-import { makeEmptyRoomState } from "../../domain/room"
+import { makeEmptyRoomState, createSnapshotMessage } from "../../domain/room"
 
 const roomStateKey = "room-state"
-
-export const createRoomSnapshot = (state: RoomState) =>
-  Schema.decodeUnknownSync(RequestRoomSnapshotSchema)({
-    requestId: state.requestId,
-    status: state.status,
-    awardedBidId: state.awardedBidId,
-    connectedViewers: state.connectedViewers,
-    leaderboard: state.bids
-      .filter((bid) => bid.status === "active")
-      .sort((a, b) => a.amountCents - b.amountCents)
-      .map((bid) => ({
-        bidId: bid.bidId,
-        providerId: bid.providerId,
-        providerDisplayName: bid.providerDisplayName,
-        amountCents: bid.amountCents,
-        availableDate: bid.availableDate,
-        notes: bid.notes,
-      })),
-  })
-
-export const createSnapshotMessage = (state: RoomState) =>
-  JSON.stringify(
-    Schema.decodeUnknownSync(RoomSnapshotMessageSchema)({
-      type: "snapshot",
-      snapshot: createRoomSnapshot(state),
-    }),
-  )
 
 export const makeDurableObjectRoomGatewayLayer = (
   doState: DurableObjectState,

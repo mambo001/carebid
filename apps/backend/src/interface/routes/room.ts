@@ -19,7 +19,7 @@ import { getRoomSnapshotQuery } from "../../application/queries/room/get-room-sn
 import { RoomNotOpenError } from "../../domain/errors"
 import { RoomGateway } from "../../domain/ports/room-gateway"
 import type { RoomState } from "../../domain/entities"
-import { createRoomSnapshot } from "../../infra/room/durable-object-room-gateway"
+import { createRoomSnapshot } from "../../domain/room"
 
 type Provide = <Result, E>(effect: Effect.Effect<Result, E, RoomGateway>) => Effect.Effect<Result, E, never>
 
