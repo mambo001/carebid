@@ -11,40 +11,32 @@ import {
 } from "@mui/material"
 import { Link as RouterLink } from "react-router-dom"
 
-import { useAppStore } from "../store/app-store"
-import { useRequestsQuery } from "../lib/queries"
-import { PatientRequestFormCard } from "./PatientRequestFormCard"
+import { useRequestsQuery } from "../../lib/queries"
+import { useAppState } from "../context"
 
-export function PatientDashboardPage() {
-  const setActiveRole = useAppStore((state) => state.setActiveRole)
+export function ProviderDashboardPage() {
+  const setActiveRole = useAppState((state) => state.setActiveRole)
   const requestsQuery = useRequestsQuery()
-
   const requests = requestsQuery.data?.items ?? []
 
   return (
     <Stack spacing={3}>
-      <Alert severity="info">Patient flow is scaffolded. Request creation comes next.</Alert>
+      <Alert severity="info">Provider filtering is scaffolded. Eligibility and bidding now run through the room Durable Object.</Alert>
 
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <div>
-          <Typography variant="h4" fontWeight={800}>
-            Patient dashboard
-          </Typography>
+          <Typography variant="h2">Provider dashboard</Typography>
           <Typography color="text.secondary">
-            Review active requests and jump into bidding rooms.
+            Review eligible requests and join the live bidding room.
           </Typography>
         </div>
 
-        <Button variant="contained" onClick={() => setActiveRole("patient")}>
-          Use patient role
+        <Button variant="contained" onClick={() => setActiveRole("provider")}>
+          Use provider role
         </Button>
       </Stack>
 
       <Grid container spacing={3}>
-        <Grid size={12}>
-          <PatientRequestFormCard />
-        </Grid>
-
         {requestsQuery.isLoading &&
           [0, 1].map((item) => (
             <Grid key={item} size={{ xs: 12, md: 6 }}>
@@ -57,18 +49,17 @@ export function PatientDashboardPage() {
             <Card elevation={0} sx={{ borderRadius: 4 }}>
               <CardContent>
                 <Stack spacing={2}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Stack direction="row" justifyContent="space-between">
                     <Typography variant="h6" fontWeight={700}>
                       {request.title}
                     </Typography>
-                    <Chip label={request.status} color={request.status === "open" ? "success" : "default"} />
+                    <Chip label={request.urgency} color={request.urgency === "urgent" ? "error" : "default"} />
                   </Stack>
-                  <Typography color="text.secondary">{request.category.replaceAll("_", " ")}</Typography>
-                  <Typography variant="body2">
-                    Target budget: PHP {(request.targetBudgetCents / 100).toLocaleString()}
+                  <Typography color="text.secondary">
+                    {request.category.replaceAll("_", " ")} · {request.locationCity}
                   </Typography>
                   <Button component={RouterLink} to={`/requests/${request.id}`} variant="outlined">
-                    Open room
+                    Join room
                   </Button>
                 </Stack>
               </CardContent>
@@ -78,7 +69,7 @@ export function PatientDashboardPage() {
 
         {requestsQuery.isSuccess && requests.length === 0 && (
           <Grid size={12}>
-            <Alert severity="warning">No requests available yet.</Alert>
+            <Alert severity="warning">No eligible requests available yet.</Alert>
           </Grid>
         )}
       </Grid>

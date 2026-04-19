@@ -22,12 +22,11 @@ export function HomePage() {
         <Typography variant="overline" color="primary.main">
           Reverse-bid healthcare marketplace demo
         </Typography>
-        <Typography variant="h2" fontWeight={800} sx={{ maxWidth: 720 }}>
+        <Typography variant="h1" sx={{ maxWidth: 720 }}>
           Patients post care requests. Providers compete with price and availability.
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 680 }}>
-          CareBid focuses the first demo on specialist consults and imaging, with real-time
-          bidding rooms backed by Durable Objects.
+        <Typography variant="h3" color="text.secondary" sx={{ maxWidth: 680 }}>
+          CareBid focuses the first demo on specialist consults and imaging, with real-time bidding rooms backed by Durable Objects.
         </Typography>
       </Stack>
 
@@ -58,7 +57,7 @@ export function HomePage() {
               <CardContent>
                 <Stack spacing={2}>
                   <Chip label={category.replaceAll("_", " ")} sx={{ alignSelf: "start" }} />
-                  <Typography variant="h5" fontWeight={700}>
+                  <Typography variant="h2">
                     {category === "specialist_consult" ? "Specialist consult marketplace" : "Imaging quote marketplace"}
                   </Typography>
                   <Typography color="text.secondary">

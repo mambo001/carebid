@@ -10,7 +10,7 @@ import {
 import { Form } from "react-final-form"
 import { Select, TextField } from "mui-rff"
 
-import { useCreateRequestMutation } from "../lib/queries"
+import { useCreateRequestMutation } from "../../lib/queries"
 import {
   bodyAreaOptions,
   createInitialRequestValues,
@@ -20,13 +20,12 @@ import {
   specialistVisitTypeOptions,
   urgencyOptions,
   type RequestFormValues,
-} from "../lib/request-form"
+} from "../../lib/request-form"
 
 const required = (value: unknown) => (value ? undefined : "Required")
 
 export function PatientRequestFormCard() {
   const createRequest = useCreateRequestMutation()
-
   const initialValues = createInitialRequestValues()
 
   return (
@@ -34,7 +33,7 @@ export function PatientRequestFormCard() {
       <CardContent>
         <Stack spacing={3}>
           <div>
-            <Typography variant="h5" fontWeight={700}>
+            <Typography variant="h6" fontWeight={700}>
               Create request
             </Typography>
             <Typography color="text.secondary">

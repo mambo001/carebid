@@ -1,9 +1,9 @@
 import {
   Alert,
   Button,
-  Chip,
   Card,
   CardContent,
+  Chip,
   Divider,
   List,
   ListItem,
@@ -15,15 +15,15 @@ import {
 import { useEffect } from "react"
 import { useParams } from "react-router-dom"
 
-import { useAcceptBidMutation, useExpireRequestMutation, useRoomSnapshotQuery } from "../lib/queries"
-import { useRoomSocket } from "../lib/use-room-socket"
-import { useAppStore } from "../store/app-store"
+import { useAcceptBidMutation, useExpireRequestMutation, useRoomSnapshotQuery } from "../../lib/queries"
+import { useRoomSocket } from "../../lib/use-room-socket"
+import { useAppState } from "../context"
 import { ProviderBidCard } from "./ProviderBidCard"
 
 export function RequestRoomPage() {
   const { requestId = "unknown" } = useParams()
-  const setLastVisitedRequestId = useAppStore((state) => state.setLastVisitedRequestId)
-  const activeRole = useAppStore((state) => state.activeRole)
+  const setLastVisitedRequestId = useAppState((state) => state.setLastVisitedRequestId)
+  const activeRole = useAppState((state) => state.activeRole)
   const roomQuery = useRoomSnapshotQuery(requestId)
   const acceptBid = useAcceptBidMutation(requestId)
   const expireRequest = useExpireRequestMutation(requestId)
@@ -43,9 +43,7 @@ export function RequestRoomPage() {
       </Alert>
 
       <div>
-        <Typography variant="h4" fontWeight={800}>
-          Request room
-        </Typography>
+        <Typography variant="h2">Request room</Typography>
         <Typography color="text.secondary">Request ID: {requestId}</Typography>
         {snapshot && (
           <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
@@ -62,7 +60,7 @@ export function RequestRoomPage() {
               Current leaderboard
             </Typography>
             <Typography color="text.secondary">
-              Connected viewers: {roomQuery.data?.connectedViewers ?? 0}
+              Connected viewers: {snapshot?.connectedViewers ?? 0}
             </Typography>
             <Divider />
             {roomQuery.isLoading && <Skeleton variant="rounded" height={180} />}

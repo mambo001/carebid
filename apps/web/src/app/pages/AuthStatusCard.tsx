@@ -1,20 +1,10 @@
 import { Alert, Button, Card, CardContent, Chip, Stack, Typography } from "@mui/material"
-import { useEffect } from "react"
 
-import { useSessionQuery, useSwitchRoleMutation } from "../lib/queries"
-import { useAppStore } from "../store/app-store"
+import { useSessionQuery, useSwitchRoleMutation } from "../../lib/queries"
 
 export function AuthStatusCard() {
   const sessionQuery = useSessionQuery()
   const switchRole = useSwitchRoleMutation()
-  const setSession = useAppStore((state) => state.setSession)
-
-  useEffect(() => {
-    if (sessionQuery.data?.session) {
-      setSession(sessionQuery.data.session)
-    }
-  }, [sessionQuery.data, setSession])
-
   const session = sessionQuery.data?.session
 
   return (

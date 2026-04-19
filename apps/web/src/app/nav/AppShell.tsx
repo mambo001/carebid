@@ -10,12 +10,13 @@ import {
 import { useEffect } from "react"
 import { NavLink, Outlet } from "react-router-dom"
 
-import { useSessionQuery } from "../lib/queries"
-import { useAppStore } from "../store/app-store"
+import { useSessionQuery } from "../../lib/queries"
+import { APP_NAME, primaryNavigation } from "../contants"
+import { useAppState } from "../context"
 
 export function AppShell() {
   const sessionQuery = useSessionQuery()
-  const setSession = useAppStore((state) => state.setSession)
+  const setSession = useAppState((state) => state.setSession)
 
   useEffect(() => {
     if (sessionQuery.data?.session) {
@@ -28,19 +29,15 @@ export function AppShell() {
       <AppBar position="sticky" color="inherit" elevation={0}>
         <Toolbar sx={{ justifyContent: "space-between", py: 1 }}>
           <Typography variant="h6" fontWeight={800} color="primary.main">
-            CareBid
+            {APP_NAME}
           </Typography>
 
           <Stack direction="row" spacing={1}>
-            <Button component={NavLink} to="/" color="inherit">
-              Home
-            </Button>
-            <Button component={NavLink} to="/patient" color="inherit">
-              Patient
-            </Button>
-            <Button component={NavLink} to="/provider" color="inherit">
-              Provider
-            </Button>
+            {primaryNavigation.map((item) => (
+              <Button key={item.to} component={NavLink} to={item.to} color="inherit">
+                {item.label}
+              </Button>
+            ))}
           </Stack>
         </Toolbar>
       </AppBar>

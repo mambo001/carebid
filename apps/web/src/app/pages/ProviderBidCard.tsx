@@ -4,13 +4,13 @@ import { TextField } from "mui-rff"
 
 import type { BidInput } from "@carebid/shared"
 
-import { usePlaceBidMutation, useWithdrawBidMutation } from "../lib/queries"
-import { useAppStore } from "../store/app-store"
+import { usePlaceBidMutation, useWithdrawBidMutation } from "../../lib/queries"
+import { useAppState } from "../context"
 
 const required = (value: unknown) => (value ? undefined : "Required")
 
 export function ProviderBidCard({ requestId }: { requestId: string }) {
-  const session = useAppStore((state) => state.session)
+  const session = useAppState((state) => state.session)
   const placeBid = usePlaceBidMutation(requestId)
   const withdrawBid = useWithdrawBidMutation(requestId)
 

@@ -13,7 +13,7 @@ type AppState = {
   setSession: (session: AppSession | null) => void
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppState = create<AppState>((set) => ({
   activeRole: null,
   lastVisitedRequestId: null,
   session: null,
