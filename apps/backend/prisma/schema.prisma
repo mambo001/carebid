@@ -111,7 +111,7 @@ model CareRequest {
   category           ProviderCategory
   title              String
   sanitizedSummary   String
-  targetBudgetCents  Int
+  targetBudget       Int              @map("targetBudgetCents")
   locationCity       String
   locationRegion     String
   preferredStartDate DateTime
@@ -137,7 +137,7 @@ model Bid {
   id            String       @id @default(cuid())
   careRequestId String
   providerId    String
-  amountCents   Int
+  amount        Int          @map("amountCents")
   availableDate DateTime
   notes         String?
   status        BidStatus    @default(active)
@@ -149,7 +149,7 @@ model Bid {
   bidHistory    BidHistory[]
 
   @@unique([careRequestId, providerId])
-  @@index([careRequestId, status, amountCents, updatedAt(sort: Desc)])
+  @@index([careRequestId, status, amount, updatedAt(sort: Desc)])
   @@index([providerId, createdAt(sort: Desc)])
 }
 

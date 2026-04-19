@@ -30,7 +30,7 @@ export const placeBid = (
     bidId: existingIndex >= 0 ? state.bids[existingIndex].bidId : `bid-${crypto.randomUUID()}`,
     providerId: input.providerId,
     providerDisplayName: input.providerDisplayName,
-    amountCents: input.amountCents,
+    amount: input.amount,
     availableDate: input.availableDate,
     notes: input.notes,
     status: "active",
@@ -108,12 +108,12 @@ export const createRoomSnapshot = (state: RoomState) =>
     connectedViewers: state.connectedViewers,
     leaderboard: state.bids
       .filter((bid) => bid.status === "active")
-      .sort((a, b) => a.amountCents - b.amountCents)
+      .sort((a, b) => a.amount - b.amount)
       .map((bid) => ({
         bidId: bid.bidId,
         providerId: bid.providerId,
         providerDisplayName: bid.providerDisplayName,
-        amountCents: bid.amountCents,
+        amount: bid.amount,
         availableDate: bid.availableDate,
         notes: bid.notes,
       })),

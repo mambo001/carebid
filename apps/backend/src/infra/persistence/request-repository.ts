@@ -12,7 +12,7 @@ const mapRequestSummary = (request: {
   category: "specialist_consult" | "imaging"
   title: string
   sanitizedSummary: string
-  targetBudgetCents: number
+  targetBudget: number
   locationCity: string
   locationRegion: string
   preferredStartDate: Date
@@ -26,7 +26,7 @@ const mapRequestSummary = (request: {
   category: request.category,
   title: request.title,
   sanitizedSummary: request.sanitizedSummary,
-  targetBudgetCents: request.targetBudgetCents,
+  targetBudget: request.targetBudget,
   locationCity: request.locationCity,
   locationRegion: request.locationRegion,
   preferredStartDate: request.preferredStartDate.toISOString(),
@@ -91,7 +91,7 @@ export const makePrismaRequestRepository = (databaseUrl: string): RequestReposit
               category: input.category,
               title: input.title,
               sanitizedSummary: input.sanitizedSummary,
-              targetBudgetCents: input.targetBudgetCents,
+              targetBudget: input.targetBudget,
               locationCity: input.locationCity,
               locationRegion: input.locationRegion,
               preferredStartDate: new Date(input.preferredStartDate),

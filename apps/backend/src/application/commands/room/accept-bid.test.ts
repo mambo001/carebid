@@ -19,7 +19,7 @@ describe("acceptBidCommand", () => {
           requestId: "req-accept-001",
           providerId: "pro-1",
           providerDisplayName: "Dr. Accept",
-          amountCents: 200000,
+          amount: 200000,
           availableDate: "2026-05-01",
         })
         const bidId = placed.bids[0].bidId

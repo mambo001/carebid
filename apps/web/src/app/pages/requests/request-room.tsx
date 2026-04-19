@@ -74,7 +74,7 @@ export function RequestRoomPage() {
                   />
                   <Stack direction={{ xs: "column", md: "row" }} spacing={1} alignItems={{ md: "center" }}>
                     <Typography fontWeight={700}>
-                      PHP {(entry.amountCents / 100).toLocaleString()}
+                      PHP {(entry.amount / 100).toLocaleString()}
                     </Typography>
                     {snapshot.awardedBidId === entry.bidId && <Chip label="Accepted" color="success" />}
                     {activeRole === "patient" && snapshot.status === "open" && (

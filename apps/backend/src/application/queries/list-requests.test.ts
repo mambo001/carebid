@@ -27,7 +27,7 @@ describe("listRequests query", () => {
           category: "imaging",
           title: "Query test",
           sanitizedSummary: "Testing list query after creation",
-          targetBudgetCents: 100000,
+          targetBudget: 100000,
           locationCity: "Makati",
           locationRegion: "Metro Manila",
           preferredStartDate: "2026-05-01",

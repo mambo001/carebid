@@ -21,7 +21,7 @@ describe("openRequest command", () => {
           category: "imaging",
           title: "Open command test",
           sanitizedSummary: "Testing the open request command pipeline",
-          targetBudgetCents: 200000,
+          targetBudget: 200000,
           locationCity: "Taguig",
           locationRegion: "Metro Manila",
           preferredStartDate: "2026-05-01",

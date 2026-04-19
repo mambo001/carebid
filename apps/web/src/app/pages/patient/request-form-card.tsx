@@ -6,11 +6,11 @@ import {
   MenuItem,
   Stack,
   Typography,
-} from "@mui/material"
-import { Form } from "react-final-form"
-import { Select, TextField } from "mui-rff"
+} from "@mui/material";
+import { Form } from "react-final-form";
+import { Select, TextField } from "mui-rff";
 
-import { useCreateRequestMutation } from "../../../lib/queries"
+import { useCreateRequestMutation } from "../../../lib/queries";
 import {
   bodyAreaOptions,
   createInitialRequestValues,
@@ -20,13 +20,13 @@ import {
   specialistVisitTypeOptions,
   urgencyOptions,
   type RequestFormValues,
-} from "../../../lib/request-form"
+} from "../../../lib/request-form";
 
-const required = (value: unknown) => (value ? undefined : "Required")
+const required = (value: unknown) => (value ? undefined : "Required");
 
 export function PatientRequestFormCard() {
-  const createRequest = useCreateRequestMutation()
-  const initialValues = createInitialRequestValues()
+  const createRequest = useCreateRequestMutation();
+  const initialValues = createInitialRequestValues();
 
   return (
     <Card elevation={0} sx={{ borderRadius: 4 }}>
@@ -37,30 +37,38 @@ export function PatientRequestFormCard() {
               Create request
             </Typography>
             <Typography color="text.secondary">
-              Start with a sanitized request. This currently saves into the demo backend flow.
+              Start with a sanitized request. This currently saves into the demo
+              backend flow.
             </Typography>
           </div>
 
           <Form<RequestFormValues>
             initialValues={initialValues}
             onSubmit={async (values) => {
-              await createRequest.mutateAsync(values)
+              await createRequest.mutateAsync(values);
             }}
             render={({ handleSubmit, submitting, values }) => {
-              const currentValues = values ?? initialValues
+              const currentValues = values ?? initialValues;
 
               return (
                 <form onSubmit={handleSubmit} noValidate>
                   <Stack spacing={2.5}>
                     {createRequest.isSuccess && (
-                      <Alert severity="success">Request created and added to the dashboard list.</Alert>
+                      <Alert severity="success">
+                        Request created and added to the dashboard list.
+                      </Alert>
                     )}
 
                     {createRequest.isError && (
                       <Alert severity="error">Failed to create request.</Alert>
                     )}
 
-                    <Select name="category" label="Category" required fieldProps={{ validate: required }}>
+                    <Select
+                      name="category"
+                      label="Category"
+                      required
+                      fieldProps={{ validate: required }}
+                    >
                       {requestCategoryOptions.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
                           {option.label}
@@ -68,7 +76,12 @@ export function PatientRequestFormCard() {
                       ))}
                     </Select>
 
-                    <TextField name="title" label="Title" required fieldProps={{ validate: required }} />
+                    <TextField
+                      name="title"
+                      label="Title"
+                      required
+                      fieldProps={{ validate: required }}
+                    />
 
                     <TextField
                       name="sanitizedSummary"
@@ -80,16 +93,26 @@ export function PatientRequestFormCard() {
                     />
 
                     <TextField
-                      name="targetBudgetCents"
-                      label="Target budget (cents)"
+                      name="targetBudget"
+                      label="Target budget"
                       required
                       fieldProps={{ validate: required }}
                       type="number"
                     />
 
                     <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                      <TextField name="locationCity" label="City" required fieldProps={{ validate: required }} />
-                      <TextField name="locationRegion" label="Region" required fieldProps={{ validate: required }} />
+                      <TextField
+                        name="locationCity"
+                        label="City"
+                        required
+                        fieldProps={{ validate: required }}
+                      />
+                      <TextField
+                        name="locationRegion"
+                        label="Region"
+                        required
+                        fieldProps={{ validate: required }}
+                      />
                     </Stack>
 
                     <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
@@ -112,7 +135,12 @@ export function PatientRequestFormCard() {
                     </Stack>
 
                     <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                      <Select name="urgency" label="Urgency" required fieldProps={{ validate: required }}>
+                      <Select
+                        name="urgency"
+                        label="Urgency"
+                        required
+                        fieldProps={{ validate: required }}
+                      >
                         {urgencyOptions.map((option) => (
                           <MenuItem key={option.value} value={option.value}>
                             {option.label}
@@ -120,7 +148,12 @@ export function PatientRequestFormCard() {
                         ))}
                       </Select>
 
-                      <Select name="serviceMode" label="Service mode" required fieldProps={{ validate: required }}>
+                      <Select
+                        name="serviceMode"
+                        label="Service mode"
+                        required
+                        fieldProps={{ validate: required }}
+                      >
                         {serviceModeOptions.map((option) => (
                           <MenuItem key={option.value} value={option.value}>
                             {option.label}
@@ -190,16 +223,22 @@ export function PatientRequestFormCard() {
                       </>
                     )}
 
-                    <Button type="submit" variant="contained" disabled={submitting || createRequest.isPending}>
-                      {createRequest.isPending ? "Saving request..." : "Create request"}
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={submitting || createRequest.isPending}
+                    >
+                      {createRequest.isPending
+                        ? "Saving request..."
+                        : "Create request"}
                     </Button>
                   </Stack>
                 </form>
-              )
+              );
             }}
           />
         </Stack>
       </CardContent>
     </Card>
-  )
+  );
 }

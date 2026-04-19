@@ -19,12 +19,12 @@ describe("placeBidCommand", () => {
         requestId: "req-test-bid-001",
         providerId: "pro-1",
         providerDisplayName: "Dr. Test",
-        amountCents: 150000,
+        amount: 150000,
         availableDate: "2026-05-01",
       }),
     )
     expect(state.bids.length).toBe(1)
-    expect(state.bids[0].amountCents).toBe(150000)
+    expect(state.bids[0].amount).toBe(150000)
     expect(state.bids[0].status).toBe("active")
   })
 
@@ -35,20 +35,20 @@ describe("placeBidCommand", () => {
           requestId: "req-test-bid-002",
           providerId: "pro-1",
           providerDisplayName: "Dr. Test",
-          amountCents: 150000,
+          amount: 150000,
           availableDate: "2026-05-01",
         })
         return yield* placeBidCommand({
           requestId: "req-test-bid-002",
           providerId: "pro-1",
           providerDisplayName: "Dr. Test",
-          amountCents: 120000,
+          amount: 120000,
           availableDate: "2026-05-02",
         })
       }),
     )
     expect(state.bids.length).toBe(1)
-    expect(state.bids[0].amountCents).toBe(120000)
+    expect(state.bids[0].amount).toBe(120000)
   })
 
   it("fails on a non-open room", async () => {
@@ -61,7 +61,7 @@ describe("placeBidCommand", () => {
             requestId: "req-closed",
             providerId: "pro-1",
             providerDisplayName: "Dr. Test",
-            amountCents: 100000,
+            amount: 100000,
             availableDate: "2026-05-01",
           })
         }),

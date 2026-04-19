@@ -8,22 +8,25 @@ import {
   Skeleton,
   Stack,
   Typography,
-} from "@mui/material"
-import { Link as RouterLink } from "react-router-dom"
+} from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 
-import { useOpenRequestMutation, useRequestsQuery } from "../../../lib/queries"
-import { useAppState } from "../../context"
-import { PatientRequestFormCard } from "./request-form-card"
+import { useOpenRequestMutation, useRequestsQuery } from "../../../lib/queries";
+import { useAppState } from "../../context";
+import { PatientRequestFormCard } from "./request-form-card";
 
 export function PatientDashboardPage() {
-  const setActiveRole = useAppState((state) => state.setActiveRole)
-  const requestsQuery = useRequestsQuery()
-  const openRequest = useOpenRequestMutation()
-  const requests = requestsQuery.data?.items ?? []
+  const setActiveRole = useAppState((state) => state.setActiveRole);
+  const requestsQuery = useRequestsQuery();
+  const openRequest = useOpenRequestMutation();
+  const requests = requestsQuery.data?.items ?? [];
 
   return (
     <Stack spacing={3}>
-      <Alert severity="info">Patient flow is scaffolded. Request creation is running through the demo API.</Alert>
+      <Alert severity="info">
+        Patient flow is scaffolded. Request creation is running through the demo
+        API.
+      </Alert>
 
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <div>
@@ -55,23 +58,40 @@ export function PatientDashboardPage() {
             <Card elevation={0} sx={{ borderRadius: 4 }}>
               <CardContent>
                 <Stack spacing={2}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
                     <Typography variant="h6" fontWeight={700}>
                       {request.title}
                     </Typography>
-                    <Chip label={request.status} color={request.status === "open" ? "success" : "default"} />
+                    <Chip
+                      label={request.status}
+                      color={request.status === "open" ? "success" : "default"}
+                    />
                   </Stack>
-                  <Typography color="text.secondary">{request.category.replaceAll("_", " ")}</Typography>
+                  <Typography color="text.secondary">
+                    {request.category.replaceAll("_", " ")}
+                  </Typography>
                   <Typography variant="body2">
-                    Target budget: PHP {(request.targetBudgetCents / 100).toLocaleString()}
+                    Target budget: PHP{" "}
+                    {(request.targetBudget / 100).toLocaleString()}
                   </Typography>
                   <Stack direction="row" spacing={1.5}>
                     {request.status === "draft" && (
-                      <Button variant="contained" onClick={() => openRequest.mutate(request.id)}>
+                      <Button
+                        variant="contained"
+                        onClick={() => openRequest.mutate(request.id)}
+                      >
                         Open request
                       </Button>
                     )}
-                    <Button component={RouterLink} to={`/requests/${request.id}`} variant="outlined">
+                    <Button
+                      component={RouterLink}
+                      to={`/requests/${request.id}`}
+                      variant="outlined"
+                    >
                       Open room
                     </Button>
                   </Stack>
@@ -88,5 +108,5 @@ export function PatientDashboardPage() {
         )}
       </Grid>
     </Stack>
-  )
+  );
 }

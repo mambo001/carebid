@@ -12,7 +12,7 @@ const seedRequests: RequestSummary[] = [
     title: "Neurology second opinion",
     sanitizedSummary:
       "Recurring migraines for several months. Looking for a second opinion within two weeks.",
-    targetBudgetCents: 1800000,
+    targetBudget: 1800000,
     locationCity: "Makati",
     locationRegion: "Metro Manila",
     preferredStartDate: "2026-04-24",
@@ -28,7 +28,7 @@ const seedRequests: RequestSummary[] = [
     title: "CT quote for chest imaging",
     sanitizedSummary:
       "Need chest CT pricing with earliest availability this week. Prefers a reputable imaging center.",
-    targetBudgetCents: 950000,
+    targetBudget: 950000,
     locationCity: "Taguig",
     locationRegion: "Metro Manila",
     preferredStartDate: "2026-04-21",
@@ -62,7 +62,7 @@ export const makeInMemoryRequestRepository = (): RequestRepository => {
         category: input.category,
         title: input.title,
         sanitizedSummary: input.sanitizedSummary,
-        targetBudgetCents: input.targetBudgetCents,
+        targetBudget: input.targetBudget,
         locationCity: input.locationCity,
         locationRegion: input.locationRegion,
         preferredStartDate: input.preferredStartDate,

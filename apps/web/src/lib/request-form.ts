@@ -1,29 +1,29 @@
-import type { CreateCareRequestInput } from "@carebid/shared"
+import type { CreateCareRequestInput } from "@carebid/shared";
 
-export type RequestFormValues = CreateCareRequestInput
+export type RequestFormValues = CreateCareRequestInput;
 
 export const requestCategoryOptions = [
   { label: "Specialist consult", value: "specialist_consult" },
   { label: "Imaging", value: "imaging" },
-] as const
+] as const;
 
 export const urgencyOptions = [
   { label: "Routine", value: "routine" },
   { label: "Soon", value: "soon" },
   { label: "Urgent", value: "urgent" },
-] as const
+] as const;
 
 export const serviceModeOptions = [
   { label: "In person", value: "in_person" },
   { label: "Telehealth", value: "telehealth" },
   { label: "Either", value: "either" },
-] as const
+] as const;
 
 export const specialistVisitTypeOptions = [
   { label: "New issue", value: "new_issue" },
   { label: "Follow up", value: "follow_up" },
   { label: "Second opinion", value: "second_opinion" },
-] as const
+] as const;
 
 export const imagingTypeOptions = [
   { label: "X-ray", value: "xray" },
@@ -32,7 +32,7 @@ export const imagingTypeOptions = [
   { label: "MRI", value: "mri" },
   { label: "Mammogram", value: "mammogram" },
   { label: "Other", value: "other" },
-] as const
+] as const;
 
 export const bodyAreaOptions = [
   { label: "Head", value: "head" },
@@ -45,13 +45,13 @@ export const bodyAreaOptions = [
   { label: "Pelvis", value: "pelvis" },
   { label: "General", value: "general" },
   { label: "Other", value: "other" },
-] as const
+] as const;
 
 export const createInitialRequestValues = (): RequestFormValues => ({
   category: "specialist_consult",
   title: "",
   sanitizedSummary: "",
-  targetBudgetCents: 1500000,
+  targetBudget: 1500,
   locationCity: "",
   locationRegion: "",
   preferredStartDate: "2026-04-24",
@@ -64,4 +64,4 @@ export const createInitialRequestValues = (): RequestFormValues => ({
     specialty: "Neurology",
     telehealthAccepted: true,
   },
-})
+});

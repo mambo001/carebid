@@ -19,7 +19,7 @@ describe("withdrawBidCommand", () => {
           requestId: "req-withdraw-001",
           providerId: "pro-1",
           providerDisplayName: "Dr. Test",
-          amountCents: 150000,
+          amount: 150000,
           availableDate: "2026-05-01",
         })
         return yield* withdrawBidCommand({

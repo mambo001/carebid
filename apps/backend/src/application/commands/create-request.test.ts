@@ -21,7 +21,7 @@ describe("createRequest command", () => {
           category: "specialist_consult",
           title: "Command test request",
           sanitizedSummary: "Testing the create request command pipeline",
-          targetBudgetCents: 300000,
+          targetBudget: 300000,
           locationCity: "Makati",
           locationRegion: "Metro Manila",
           preferredStartDate: "2026-05-01",

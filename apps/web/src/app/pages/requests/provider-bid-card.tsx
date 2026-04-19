@@ -21,7 +21,7 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
     requestId,
     providerId,
     providerDisplayName,
-    amountCents: 1200000,
+    amount: 1200000,
     availableDate: "2026-04-25",
     notes: "Open slot available this week.",
   }
@@ -56,7 +56,7 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
                   {withdrawBid.isSuccess && <Alert severity="info">Bid withdrawn from the room.</Alert>}
 
                   <TextField
-                    name="amountCents"
+                    name="amount"
                     label="Bid amount (cents)"
                     type="number"
                     required
