@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DIRECT_URL")
+}
+
+enum ProviderCategory {
+  specialist_consult
+  imaging
+}
+
+enum RequestStatus {
+  draft
+  open
+  awarded
+  expired
+}
+
+enum BidStatus {
+  active
+  withdrawn
+  accepted
+  rejected
+  expired
+}
+
+enum Urgency {
+  routine
+  soon
+  urgent
+}
+
+enum ServiceMode {
+  in_person
+  telehealth
+  either
+}
+
+enum ProviderVerificationStatus {
+  verified
+}
+
+enum ProviderVerificationMode {
+  demo_auto
+}
+
+enum BidHistoryEventType {
+  placed
+  updated
+  withdrawn
+  accepted
+  rejected
+  expired
+}
+
+model Patient {
+  id             String        @id @default(cuid())
+  authUserId     String        @unique
+  email          String        @unique
+  displayName    String
+  locationCity   String
+  locationRegion String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  careRequests   CareRequest[]
+}
+
+model Provider {
+  id                  String                       @id @default(cuid())
+  authUserId          String                       @unique
+  email               String                       @unique
+  displayName         String
+  rating              Decimal?                     @db.Decimal(3, 2)
+  licenseRegion       String?
+  verificationStatus  ProviderVerificationStatus
+  verificationMode    ProviderVerificationMode
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  categories          ProviderCategoryAssignment[]
+  bids                Bid[]
+  bidHistory          BidHistory[]
+}
+
+model ProviderCategoryAssignment {
+  providerId String
+  category   ProviderCategory
+  provider   Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@id([providerId, category])
+}
+
+model CareRequest {
+  id                  String        @id @default(cuid())
+  patientId           String
+  category            ProviderCategory
+  title               String
+  sanitizedSummary    String
+  targetBudgetCents   Int
+  locationCity        String
+  locationRegion      String
+  preferredStartDate  DateTime
+  preferredEndDate    DateTime
+  urgency             Urgency
+  serviceMode         ServiceMode
+  details             Json
+  status              RequestStatus @default(draft)
+  expiresAt           DateTime
+  awardedBidId        String?       @unique
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  patient             Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bids                Bid[]
+  awardedBid          Bid?          @relation("AwardedBid", fields: [awardedBidId], references: [id])
+  bidHistory          BidHistory[]
+
+  @@index([patientId, createdAt(sort: Desc)])
+  @@index([status, category, expiresAt])
+}
+
+model Bid {
+  id              String       @id @default(cuid())
+  careRequestId   String
+  providerId      String
+  amountCents     Int
+  availableDate   DateTime
+  notes           String?
+  status          BidStatus    @default(active)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  careRequest     CareRequest  @relation(fields: [careRequestId], references: [id], onDelete: Cascade)
+  provider        Provider     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  awardedFor      CareRequest? @relation("AwardedBid")
+  bidHistory      BidHistory[]
+
+  @@unique([careRequestId, providerId])
+  @@index([careRequestId, status, amountCents, updatedAt(sort: Desc)])
+  @@index([providerId, createdAt(sort: Desc)])
+}
+
+model BidHistory {
+  id               String              @id @default(cuid())
+  bidId            String
+  careRequestId    String
+  providerId       String
+  eventType        BidHistoryEventType
+  actorAuthUserId  String
+  oldAmountCents   Int?
+  newAmountCents   Int?
+  oldAvailableDate DateTime?
+  newAvailableDate DateTime?
+  createdAt        DateTime            @default(now())
+  bid              Bid                 @relation(fields: [bidId], references: [id], onDelete: Cascade)
+  careRequest      CareRequest         @relation(fields: [careRequestId], references: [id], onDelete: Cascade)
+  provider         Provider            @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([careRequestId, createdAt(sort: Desc)])
+}

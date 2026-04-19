@@ -1,5 +1,7 @@
 import { Hono } from "hono"
 
+import { createRouter } from "./lib/router"
+
 export class RequestRoomDurableObject {
   constructor(
     readonly state: DurableObjectState,
@@ -13,6 +15,6 @@ export class RequestRoomDurableObject {
 
 const app = new Hono<{ Bindings: Env }>()
 
-app.get("/health", (c) => c.json({ ok: true, app: c.env.APP_NAME }))
+app.route("/", createRouter())
 
 export default app
