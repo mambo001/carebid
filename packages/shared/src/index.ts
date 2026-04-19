@@ -1,1 +1,2 @@
-export const appName = "CareBid"
+export * from "./contracts"
+export * from "./constants"
