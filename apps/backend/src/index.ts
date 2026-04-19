@@ -22,6 +22,23 @@ import { RoomGateway } from "./domain/ports/room-gateway"
 import type { RoomState } from "./domain/entities"
 import { makeDurableObjectRoomGatewayLayer, createRoomSnapshot, createSnapshotMessage } from "./infra/room/durable-object-room-gateway"
 
+const validStatuses = ["draft", "open", "awarded", "expired"] as const
+
+const parseInitialStatus = (param: string | null): RoomState["status"] =>
+  validStatuses.includes(param as RoomState["status"]) ? (param as RoomState["status"]) : "open"
+
+const closedResponse = (state: RoomState) =>
+  Response.json(
+    { ok: false, error: "Request is no longer open", snapshot: createRoomSnapshot(state) },
+    { status: 409 },
+  )
+
+const onRoomNotOpen = (requestId: string) =>
+  Effect.gen(function* () {
+    const state = yield* getRoomSnapshotQuery(requestId)
+    return closedResponse(state)
+  })
+
 export class RequestRoomDurableObject {
   private sessions = new Set<WebSocket>()
 
@@ -30,25 +47,15 @@ export class RequestRoomDurableObject {
     readonly env: Env,
   ) {}
 
-  private run<Result, E>(
-    effect: Effect.Effect<Result, E, RoomGateway>,
-  ): Promise<Result> {
-    const layer = makeDurableObjectRoomGatewayLayer(this.state, this.sessions)
-    return Effect.runPromise(Effect.provide(effect, layer))
-  }
-
-  private closedResponse(state: RoomState) {
-    return Response.json(
-      { ok: false, error: "Request is no longer open", snapshot: createRoomSnapshot(state) },
-      { status: 409 },
-    )
+  private provide<Result, E>(effect: Effect.Effect<Result, E, RoomGateway>): Effect.Effect<Result, E, never> {
+    return Effect.provide(effect, makeDurableObjectRoomGatewayLayer(this.state, this.sessions))
   }
 
   private async connectWebSocket(requestId: string): Promise<Response> {
-    const state = await this.run(connectViewerCommand(requestId))
+    const state = await Effect.runPromise(this.provide(connectViewerCommand(requestId)))
+
     const pair = new WebSocketPair()
-    const client = pair[0]
-    const server = pair[1]
+    const [client, server] = Object.values(pair) as [WebSocket, WebSocket]
 
     server.accept()
     this.sessions.add(server)
@@ -56,7 +63,9 @@ export class RequestRoomDurableObject {
 
     server.addEventListener("close", () => {
       this.sessions.delete(server)
-      void this.state.blockConcurrencyWhile(() => this.run(disconnectViewerCommand(requestId)))
+      void this.state.blockConcurrencyWhile(() =>
+        Effect.runPromise(this.provide(disconnectViewerCommand(requestId))),
+      )
     })
 
     return new Response(null, { status: 101, webSocket: client })
@@ -65,81 +74,61 @@ export class RequestRoomDurableObject {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
     const requestId = url.searchParams.get("requestId") ?? this.state.id.toString()
-    const statusParam = url.searchParams.get("status") as RoomState["status"] | null
-    const initialStatus: RoomState["status"] =
-      statusParam === "draft" || statusParam === "open" || statusParam === "awarded" || statusParam === "expired"
-        ? statusParam
-        : "open"
+    const initialStatus = parseInitialStatus(url.searchParams.get("status"))
 
     if (request.method === "GET" && url.pathname === "/connect") {
       return this.connectWebSocket(requestId)
     }
 
-    if (request.method === "GET" && url.pathname === "/snapshot") {
-      const state = await this.run(getRoomSnapshotQuery(requestId, initialStatus))
-      return Response.json(createRoomSnapshot(state))
-    }
-
-    if (request.method === "POST" && url.pathname === "/status/sync") {
-      const body = Schema.decodeUnknownSync(
-        Schema.Struct({ status: Schema.Literal("draft", "open", "awarded", "expired") }),
-      )(await request.json())
-      const state = await this.run(syncRoomStatusCommand(requestId, body.status))
-      return Response.json(createRoomSnapshot(state))
-    }
-
-    if (request.method === "POST" && url.pathname === "/bids/place") {
-      const input = Schema.decodeUnknownSync(BidInputSchema)(await request.json())
-      try {
-        const state = await this.run(placeBidCommand(input))
-        return Response.json(Schema.decodeUnknownSync(BidMutationResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))
-      } catch (error) {
-        if (error instanceof RoomNotOpenError) {
-          return this.closedResponse(await this.run(getRoomSnapshotQuery(requestId)))
-        }
-        throw error
+    const effect = Effect.gen(function* () {
+      if (request.method === "GET" && url.pathname === "/snapshot") {
+        const state = yield* getRoomSnapshotQuery(requestId, initialStatus)
+        return Response.json(createRoomSnapshot(state))
       }
-    }
 
-    if (request.method === "POST" && url.pathname === "/bids/withdraw") {
-      const input = Schema.decodeUnknownSync(WithdrawBidInputSchema)(await request.json())
-      try {
-        const state = await this.run(withdrawBidCommand(input))
-        return Response.json(Schema.decodeUnknownSync(BidMutationResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))
-      } catch (error) {
-        if (error instanceof RoomNotOpenError) {
-          return this.closedResponse(await this.run(getRoomSnapshotQuery(requestId)))
-        }
-        throw error
+      if (request.method === "POST" && url.pathname === "/status/sync") {
+        const body = Schema.decodeUnknownSync(
+          Schema.Struct({ status: Schema.Literal("draft", "open", "awarded", "expired") }),
+        )(yield* Effect.tryPromise(() => request.json()))
+        const state = yield* syncRoomStatusCommand(requestId, body.status)
+        return Response.json(createRoomSnapshot(state))
       }
-    }
 
-    if (request.method === "POST" && url.pathname === "/bids/accept") {
-      const input = Schema.decodeUnknownSync(AcceptBidInputSchema)(await request.json())
-      try {
-        const state = await this.run(acceptBidCommand(input))
-        return Response.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))
-      } catch (error) {
-        if (error instanceof RoomNotOpenError) {
-          return this.closedResponse(await this.run(getRoomSnapshotQuery(requestId)))
-        }
-        throw error
+      if (request.method === "POST" && url.pathname === "/bids/place") {
+        const input = Schema.decodeUnknownSync(BidInputSchema)(yield* Effect.tryPromise(() => request.json()))
+        return yield* placeBidCommand(input).pipe(
+          Effect.map((state) => Response.json(Schema.decodeUnknownSync(BidMutationResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))),
+          Effect.catchTag("RoomNotOpenError", () => onRoomNotOpen(requestId)),
+        )
       }
-    }
 
-    if (request.method === "POST" && url.pathname === "/expire") {
-      try {
-        const state = await this.run(expireRoomCommand(requestId))
-        return Response.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))
-      } catch (error) {
-        if (error instanceof RoomNotOpenError) {
-          return this.closedResponse(await this.run(getRoomSnapshotQuery(requestId)))
-        }
-        throw error
+      if (request.method === "POST" && url.pathname === "/bids/withdraw") {
+        const input = Schema.decodeUnknownSync(WithdrawBidInputSchema)(yield* Effect.tryPromise(() => request.json()))
+        return yield* withdrawBidCommand(input).pipe(
+          Effect.map((state) => Response.json(Schema.decodeUnknownSync(BidMutationResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))),
+          Effect.catchTag("RoomNotOpenError", () => onRoomNotOpen(requestId)),
+        )
       }
-    }
 
-    return new Response("Not implemented", { status: 501 })
+      if (request.method === "POST" && url.pathname === "/bids/accept") {
+        const input = Schema.decodeUnknownSync(AcceptBidInputSchema)(yield* Effect.tryPromise(() => request.json()))
+        return yield* acceptBidCommand(input).pipe(
+          Effect.map((state) => Response.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))),
+          Effect.catchTag("RoomNotOpenError", () => onRoomNotOpen(requestId)),
+        )
+      }
+
+      if (request.method === "POST" && url.pathname === "/expire") {
+        return yield* expireRoomCommand(requestId).pipe(
+          Effect.map((state) => Response.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)({ ok: true, snapshot: createRoomSnapshot(state) }))),
+          Effect.catchTag("RoomNotOpenError", () => onRoomNotOpen(requestId)),
+        )
+      }
+
+      return new Response("Not implemented", { status: 501 })
+    })
+
+    return Effect.runPromise(this.provide(effect))
   }
 }
 
