@@ -10,11 +10,8 @@ import type {
 } from "@carebid/shared"
 
 import { DatabaseError } from "../../domain/errors"
-import { SessionRepository } from "../../domain/ports/session-repository"
+import { SessionRepository, type AuthIdentity } from "../../domain/ports/session-repository"
 import { createPrismaClient } from "../../lib/db"
-
-const demoAuthUserId = "demo-user-001"
-const demoEmail = "demo@carebid.local"
 
 const mapPatientProfile = (patient: {
   id: string
@@ -58,20 +55,23 @@ const query = <Result>(fn: () => Promise<Result>): Effect.Effect<Result, Databas
     catch: (error) => new DatabaseError({ message: String(error) }),
   })
 
-const buildSession = (db: PrismaClient): Effect.Effect<AppSession, DatabaseError> =>
+const buildSession = (
+  db: PrismaClient,
+  identity: AuthIdentity,
+): Effect.Effect<AppSession, DatabaseError> =>
   Effect.gen(function* () {
     const [session, patient, provider] = yield* Effect.all([
       query(() =>
         db.demoSession.upsert({
-          where: { authUserId: demoAuthUserId },
+          where: { authUserId: identity.authUserId },
           update: {},
-          create: { authUserId: demoAuthUserId, email: demoEmail },
+          create: { authUserId: identity.authUserId, email: identity.email },
         }),
       ),
-      query(() => db.patient.findUnique({ where: { authUserId: demoAuthUserId } })),
+      query(() => db.patient.findUnique({ where: { authUserId: identity.authUserId } })),
       query(() =>
         db.provider.findUnique({
-          where: { authUserId: demoAuthUserId },
+          where: { authUserId: identity.authUserId },
           include: { categories: true },
         }),
       ),
@@ -91,29 +91,29 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
   const prisma = createPrismaClient(databaseUrl)
 
   return {
-    getSession: () => buildSession(prisma),
+    getSession: (identity) => buildSession(prisma, identity),
 
-    switchRole: (role) =>
+    switchRole: (identity, role) =>
       Effect.gen(function* () {
         yield* query(() =>
           prisma.demoSession.upsert({
-            where: { authUserId: demoAuthUserId },
+            where: { authUserId: identity.authUserId },
             update: { activeRole: (role ?? null) as ViewerRole | null },
             create: {
-              authUserId: demoAuthUserId,
-              email: demoEmail,
+              authUserId: identity.authUserId,
+              email: identity.email,
               activeRole: (role ?? null) as ViewerRole | null,
             },
           }),
         )
-        return yield* buildSession(prisma)
+        return yield* buildSession(prisma, identity)
       }),
 
-    savePatient: (input: PatientOnboardingInput) =>
+    savePatient: (identity, input: PatientOnboardingInput) =>
       Effect.gen(function* () {
         const patient = yield* query(() =>
           prisma.patient.upsert({
-            where: { authUserId: demoAuthUserId },
+            where: { authUserId: identity.authUserId },
             update: {
               email: input.email,
               displayName: input.displayName,
@@ -121,7 +121,7 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
               locationRegion: input.locationRegion,
             },
             create: {
-              authUserId: demoAuthUserId,
+              authUserId: identity.authUserId,
               email: input.email,
               displayName: input.displayName,
               locationCity: input.locationCity,
@@ -132,21 +132,21 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
 
         yield* query(() =>
           prisma.demoSession.upsert({
-            where: { authUserId: demoAuthUserId },
+            where: { authUserId: identity.authUserId },
             update: { email: input.email, activeRole: "patient" },
-            create: { authUserId: demoAuthUserId, email: input.email, activeRole: "patient" },
+            create: { authUserId: identity.authUserId, email: input.email, activeRole: "patient" },
           }),
         )
 
-        const session = yield* buildSession(prisma)
+        const session = yield* buildSession(prisma, identity)
         return { profile: mapPatientProfile(patient), session }
       }),
 
-    saveProvider: (input: ProviderOnboardingInput) =>
+    saveProvider: (identity, input: ProviderOnboardingInput) =>
       Effect.gen(function* () {
         const provider = yield* query(() =>
           prisma.provider.upsert({
-            where: { authUserId: demoAuthUserId },
+            where: { authUserId: identity.authUserId },
             update: {
               email: input.email,
               displayName: input.displayName,
@@ -155,7 +155,7 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
               verificationMode: "demo_auto",
             },
             create: {
-              authUserId: demoAuthUserId,
+              authUserId: identity.authUserId,
               email: input.email,
               displayName: input.displayName,
               licenseRegion: input.licenseRegion,
@@ -179,9 +179,9 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
 
         yield* query(() =>
           prisma.demoSession.upsert({
-            where: { authUserId: demoAuthUserId },
+            where: { authUserId: identity.authUserId },
             update: { email: input.email, activeRole: "provider" },
-            create: { authUserId: demoAuthUserId, email: input.email, activeRole: "provider" },
+            create: { authUserId: identity.authUserId, email: input.email, activeRole: "provider" },
           }),
         )
 
@@ -192,7 +192,7 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
           }),
         )
 
-        const session = yield* buildSession(prisma)
+        const session = yield* buildSession(prisma, identity)
         return { profile: mapProviderProfile(providerWithCategories), session }
       }),
   }

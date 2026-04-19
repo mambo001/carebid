@@ -7,6 +7,8 @@ import { InMemoryRequestRepositoryLayer } from "./in-memory-request-repository"
 const run = <A, E>(effect: Effect.Effect<A, E, RequestRepository>) =>
   Effect.runPromise(Effect.provide(effect, InMemoryRequestRepositoryLayer))
 
+const testIdentity = { authUserId: "test-user-001", email: "test@carebid.local" }
+
 describe("InMemoryRequestRepository", () => {
   it("lists seed requests", async () => {
     const items = await run(
@@ -48,7 +50,7 @@ describe("InMemoryRequestRepository", () => {
     const item = await run(
       Effect.gen(function* () {
         const repo = yield* RequestRepository
-        return yield* repo.createRequest({
+        return yield* repo.createRequest(testIdentity, {
           category: "specialist_consult",
           title: "Test request",
           sanitizedSummary: "A test request for unit testing purposes",
@@ -73,7 +75,7 @@ describe("InMemoryRequestRepository", () => {
     const item = await run(
       Effect.gen(function* () {
         const repo = yield* RequestRepository
-        const created = yield* repo.createRequest({
+        const created = yield* repo.createRequest(testIdentity, {
           category: "imaging",
           title: "Open test",
           sanitizedSummary: "Testing open transition for request",

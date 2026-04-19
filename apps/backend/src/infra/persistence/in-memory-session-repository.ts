@@ -8,37 +8,40 @@ import type {
   ProviderProfile,
 } from "@carebid/shared"
 
-import { SessionRepository } from "../../domain/ports/session-repository"
-
-const demoAuthUserId = "demo-user-001"
-const demoEmail = "demo@carebid.local"
+import { SessionRepository, type AuthIdentity } from "../../domain/ports/session-repository"
 
 export const makeInMemorySessionRepository = (): SessionRepository => {
   let patientProfile: PatientProfile | undefined
   let providerProfile: ProviderProfile | undefined
   let activeRole: AppSession["role"]
+  let currentIdentity: AuthIdentity = { authUserId: "in-memory-user", email: "mem@carebid.local" }
 
   const buildSession = (): AppSession => ({
     mode: "demo",
-    authUserId: demoAuthUserId,
-    email: demoEmail,
+    authUserId: currentIdentity.authUserId,
+    email: currentIdentity.email,
     role: activeRole,
     patientProfile,
     providerProfile,
   })
 
   return {
-    getSession: () => Effect.succeed(buildSession()),
+    getSession: (identity) => {
+      currentIdentity = identity
+      return Effect.succeed(buildSession())
+    },
 
-    switchRole: (role) => {
+    switchRole: (identity, role) => {
+      currentIdentity = identity
       activeRole = role
       return Effect.succeed(buildSession())
     },
 
-    savePatient: (input: PatientOnboardingInput) => {
+    savePatient: (identity, input: PatientOnboardingInput) => {
+      currentIdentity = identity
       patientProfile = {
         id: `pat-${crypto.randomUUID()}`,
-        authUserId: demoAuthUserId,
+        authUserId: identity.authUserId,
         email: input.email,
         displayName: input.displayName,
         locationCity: input.locationCity,
@@ -48,10 +51,11 @@ export const makeInMemorySessionRepository = (): SessionRepository => {
       return Effect.succeed({ profile: patientProfile, session: buildSession() })
     },
 
-    saveProvider: (input: ProviderOnboardingInput) => {
+    saveProvider: (identity, input: ProviderOnboardingInput) => {
+      currentIdentity = identity
       providerProfile = {
         id: `pro-${crypto.randomUUID()}`,
-        authUserId: demoAuthUserId,
+        authUserId: identity.authUserId,
         email: input.email,
         displayName: input.displayName,
         licenseRegion: input.licenseRegion,

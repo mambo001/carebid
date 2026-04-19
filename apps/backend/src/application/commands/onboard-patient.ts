@@ -3,12 +3,13 @@ import { Effect } from "effect"
 import type { AppSession, PatientOnboardingInput, PatientProfile } from "@carebid/shared"
 
 import type { DatabaseError, SessionError } from "../../domain/errors"
-import { SessionRepository } from "../../domain/ports/session-repository"
+import { SessionRepository, type AuthIdentity } from "../../domain/ports/session-repository"
 
 export const onboardPatient = (
+  identity: AuthIdentity,
   input: PatientOnboardingInput,
 ): Effect.Effect<{ profile: PatientProfile; session: AppSession }, DatabaseError | SessionError, SessionRepository> =>
   Effect.gen(function* () {
     const repo = yield* SessionRepository
-    return yield* repo.savePatient(input)
+    return yield* repo.savePatient(identity, input)
   })

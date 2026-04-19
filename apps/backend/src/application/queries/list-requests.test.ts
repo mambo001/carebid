@@ -10,6 +10,8 @@ const layer = InMemoryRequestRepositoryLayer
 const run = <A, E>(effect: Effect.Effect<A, E, RequestRepository>) =>
   Effect.runPromise(Effect.provide(effect, layer))
 
+const testIdentity = { authUserId: "test-user-001", email: "test@carebid.local" }
+
 describe("listRequests query", () => {
   it("returns seed requests", async () => {
     const items = await run(listRequests())
@@ -21,7 +23,7 @@ describe("listRequests query", () => {
     const items = await run(
       Effect.gen(function* () {
         const repo = yield* RequestRepository
-        yield* repo.createRequest({
+        yield* repo.createRequest(testIdentity, {
           category: "imaging",
           title: "Query test",
           sanitizedSummary: "Testing list query after creation",

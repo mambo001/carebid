@@ -12,6 +12,10 @@ export class SessionError extends Data.TaggedError("SessionError")<{
   message?: string
 }> {}
 
+export class AuthError extends Data.TaggedError("AuthError")<{
+  message?: string
+}> {}
+
 export class RoomNotOpenError extends Data.TaggedError("RoomNotOpenError")<{
   message?: string
 }> {}

@@ -5,18 +5,20 @@ import { TextField } from "mui-rff"
 import type { PatientOnboardingInput } from "@carebid/shared"
 
 import { usePatientOnboardingMutation } from "../../../lib/queries"
+import { useAppState } from "../../context/app-state"
 
 const required = (value: unknown) => (value ? undefined : "Required")
 
-const initialValues: PatientOnboardingInput = {
-  displayName: "Jamie Reyes",
-  email: "jamie@carebid.local",
-  locationCity: "Makati",
-  locationRegion: "Metro Manila",
-}
-
 export function PatientOnboardingCard() {
   const onboarding = usePatientOnboardingMutation()
+  const neonUser = useAppState((state) => state.neonUser)
+
+  const initialValues: PatientOnboardingInput = {
+    displayName: neonUser?.name ?? "",
+    email: neonUser?.email ?? "",
+    locationCity: "",
+    locationRegion: "",
+  }
 
   return (
     <Card elevation={0} sx={{ borderRadius: 4 }}>
@@ -27,7 +29,7 @@ export function PatientOnboardingCard() {
               Patient onboarding
             </Typography>
             <Typography color="text.secondary">
-              Creates a demo patient profile tied to the current app session.
+              Create your patient profile to start posting care requests.
             </Typography>
           </div>
 

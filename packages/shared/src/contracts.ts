@@ -170,7 +170,7 @@ export const ProviderProfileSchema = Schema.Struct({
 export type ProviderProfile = typeof ProviderProfileSchema.Type;
 
 export const AppSessionSchema = Schema.Struct({
-  mode: Schema.Literal("demo"),
+  mode: Schema.Literal("demo", "authenticated"),
   authUserId: Schema.String,
   email: Schema.String,
   role: Schema.optional(ViewerRoleSchema),

@@ -10,12 +10,14 @@ const layer = InMemoryRequestRepositoryLayer
 const run = <A, E>(effect: Effect.Effect<A, E, RequestRepository>) =>
   Effect.runPromise(Effect.provide(effect, layer))
 
+const testIdentity = { authUserId: "test-user-001", email: "test@carebid.local" }
+
 describe("openRequest command", () => {
   it("transitions a request to open", async () => {
     const result = await run(
       Effect.gen(function* () {
         const repo = yield* RequestRepository
-        const created = yield* repo.createRequest({
+        const created = yield* repo.createRequest(testIdentity, {
           category: "imaging",
           title: "Open command test",
           sanitizedSummary: "Testing the open request command pipeline",

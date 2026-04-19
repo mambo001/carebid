@@ -4,10 +4,8 @@ import type { CreateCareRequestInput, RequestSummary } from "@carebid/shared"
 
 import { DatabaseError, RequestNotFoundError } from "../../domain/errors"
 import { RequestRepository } from "../../domain/ports/request-repository"
+import type { AuthIdentity } from "../../domain/ports/session-repository"
 import { createPrismaClient } from "../../lib/db"
-
-const demoAuthUserId = "demo-user-001"
-const demoEmail = "demo@carebid.local"
 
 const mapRequestSummary = (request: {
   id: string
@@ -70,16 +68,16 @@ export const makePrismaRequestRepository = (databaseUrl: string): RequestReposit
         return mapRequestSummary(request)
       }),
 
-    createRequest: (input: CreateCareRequestInput) =>
+    createRequest: (identity: AuthIdentity, input: CreateCareRequestInput) =>
       Effect.gen(function* () {
         const patient = yield* query(() =>
           prisma.patient.upsert({
-            where: { authUserId: demoAuthUserId },
+            where: { authUserId: identity.authUserId },
             update: {},
             create: {
-              authUserId: demoAuthUserId,
-              email: demoEmail,
-              displayName: "Demo Patient",
+              authUserId: identity.authUserId,
+              email: identity.email,
+              displayName: identity.email.split("@")[0],
               locationCity: input.locationCity,
               locationRegion: input.locationRegion,
             },

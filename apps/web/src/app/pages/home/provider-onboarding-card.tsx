@@ -5,18 +5,20 @@ import { Select, TextField } from "mui-rff"
 import type { ProviderOnboardingInput } from "@carebid/shared"
 
 import { useProviderOnboardingMutation } from "../../../lib/queries"
+import { useAppState } from "../../context/app-state"
 
 const required = (value: unknown) => (value ? undefined : "Required")
 
-const initialValues: ProviderOnboardingInput = {
-  displayName: "Makati Imaging Center",
-  email: "provider@carebid.local",
-  licenseRegion: "Metro Manila",
-  categories: ["imaging"],
-}
-
 export function ProviderOnboardingCard() {
   const onboarding = useProviderOnboardingMutation()
+  const neonUser = useAppState((state) => state.neonUser)
+
+  const initialValues: ProviderOnboardingInput = {
+    displayName: neonUser?.name ?? "",
+    email: neonUser?.email ?? "",
+    licenseRegion: "",
+    categories: ["imaging"],
+  }
 
   return (
     <Card elevation={0} sx={{ borderRadius: 4 }}>
@@ -27,7 +29,7 @@ export function ProviderOnboardingCard() {
               Provider onboarding
             </Typography>
             <Typography color="text.secondary">
-              Creates a demo provider profile with auto-verified categories.
+              Create your provider profile with verified categories.
             </Typography>
           </div>
 

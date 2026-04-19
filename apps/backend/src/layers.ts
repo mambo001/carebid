@@ -4,6 +4,7 @@ import { InMemoryRequestRepositoryLayer } from "./infra/persistence/in-memory-re
 import { InMemorySessionRepositoryLayer } from "./infra/persistence/in-memory-session-repository";
 import { makePrismaRequestRepositoryLayer } from "./infra/persistence/request-repository";
 import { makePrismaSessionRepositoryLayer } from "./infra/persistence/session-repository";
+import { makeNeonAuthProviderLayer } from "./infra/auth/neon-auth-provider";
 
 export const makeAppLayer = (env: Env) => {
   const requestLayer = env.DATABASE_URL
@@ -14,7 +15,11 @@ export const makeAppLayer = (env: Env) => {
     ? makePrismaSessionRepositoryLayer(env.DATABASE_URL)
     : InMemorySessionRepositoryLayer;
 
-  return Layer.mergeAll(requestLayer, sessionLayer);
+  const authLayer = env.DATABASE_URL
+    ? makeNeonAuthProviderLayer(env.DATABASE_URL)
+    : makeNeonAuthProviderLayer("");
+
+  return Layer.mergeAll(requestLayer, sessionLayer, authLayer);
 };
 
 export type AppServices = Layer.Layer.Success<ReturnType<typeof makeAppLayer>>;

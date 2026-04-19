@@ -56,7 +56,7 @@ export const makeInMemoryRequestRepository = (): RequestRepository => {
         : Effect.fail(new RequestNotFoundError({ message: `Request ${requestId} not found` }))
     },
 
-    createRequest: (input: CreateCareRequestInput) => {
+    createRequest: (_identity, input: CreateCareRequestInput) => {
       const item: RequestSummary = {
         id: `req-${crypto.randomUUID()}`,
         category: input.category,

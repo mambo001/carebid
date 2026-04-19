@@ -11,11 +11,15 @@ import { Link as RouterLink } from "react-router-dom"
 
 import { providerCategories } from "@carebid/shared"
 
+import { useAppState } from "../../context/app-state"
 import { AuthStatusCard } from "./auth-status-card"
 import { PatientOnboardingCard } from "./patient-onboarding-card"
 import { ProviderOnboardingCard } from "./provider-onboarding-card"
 
 export function HomePage() {
+  const neonUser = useAppState((state) => state.neonUser)
+  const isAuthenticated = Boolean(neonUser)
+
   return (
     <Stack spacing={4}>
       <Stack spacing={2}>
@@ -30,25 +34,38 @@ export function HomePage() {
         </Typography>
       </Stack>
 
-      <Stack direction="row" spacing={2}>
-        <Button component={RouterLink} to="/patient" variant="contained" size="large">
-          Enter patient flow
-        </Button>
-        <Button component={RouterLink} to="/provider" variant="outlined" size="large">
-          Enter provider flow
-        </Button>
-      </Stack>
+      {isAuthenticated ? (
+        <>
+          <Stack direction="row" spacing={2}>
+            <Button component={RouterLink} to="/patient" variant="contained" size="large">
+              Enter patient flow
+            </Button>
+            <Button component={RouterLink} to="/provider" variant="outlined" size="large">
+              Enter provider flow
+            </Button>
+          </Stack>
 
-      <AuthStatusCard />
+          <AuthStatusCard />
 
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <PatientOnboardingCard />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <ProviderOnboardingCard />
-        </Grid>
-      </Grid>
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <PatientOnboardingCard />
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <ProviderOnboardingCard />
+            </Grid>
+          </Grid>
+        </>
+      ) : (
+        <Stack direction="row" spacing={2}>
+          <Button component={RouterLink} to="/sign-in" variant="contained" size="large">
+            Sign in
+          </Button>
+          <Button component={RouterLink} to="/sign-up" variant="outlined" size="large">
+            Create account
+          </Button>
+        </Stack>
+      )}
 
       <Grid container spacing={3}>
         {providerCategories.map((category) => (

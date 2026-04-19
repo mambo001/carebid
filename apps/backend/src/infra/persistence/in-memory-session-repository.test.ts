@@ -7,17 +7,19 @@ import { InMemorySessionRepositoryLayer } from "./in-memory-session-repository"
 const run = <A, E>(effect: Effect.Effect<A, E, SessionRepository>) =>
   Effect.runPromise(Effect.provide(effect, InMemorySessionRepositoryLayer))
 
+const testIdentity = { authUserId: "test-user-001", email: "test@carebid.local" }
+
 describe("InMemorySessionRepository", () => {
   it("returns a demo session", async () => {
     const session = await run(
       Effect.gen(function* () {
         const repo = yield* SessionRepository
-        return yield* repo.getSession()
+        return yield* repo.getSession(testIdentity)
       }),
     )
     expect(session.mode).toBe("demo")
-    expect(session.authUserId).toBe("demo-user-001")
-    expect(session.email).toBe("demo@carebid.local")
+    expect(session.authUserId).toBe("test-user-001")
+    expect(session.email).toBe("test@carebid.local")
     expect(session.role).toBeUndefined()
   })
 
@@ -25,7 +27,7 @@ describe("InMemorySessionRepository", () => {
     const session = await run(
       Effect.gen(function* () {
         const repo = yield* SessionRepository
-        return yield* repo.switchRole("patient")
+        return yield* repo.switchRole(testIdentity, "patient")
       }),
     )
     expect(session.role).toBe("patient")
@@ -35,7 +37,7 @@ describe("InMemorySessionRepository", () => {
     const result = await run(
       Effect.gen(function* () {
         const repo = yield* SessionRepository
-        return yield* repo.savePatient({
+        return yield* repo.savePatient(testIdentity, {
           displayName: "Test Patient",
           email: "patient@test.com",
           locationCity: "Manila",
@@ -53,7 +55,7 @@ describe("InMemorySessionRepository", () => {
     const result = await run(
       Effect.gen(function* () {
         const repo = yield* SessionRepository
-        return yield* repo.saveProvider({
+        return yield* repo.saveProvider(testIdentity, {
           displayName: "Test Provider",
           email: "provider@test.com",
           licenseRegion: "Metro Manila",

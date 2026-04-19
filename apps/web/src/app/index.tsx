@@ -21,6 +21,8 @@ import {
   ProviderDashboard,
   Room,
   Settings,
+  SignIn,
+  SignUp,
 } from "./pages"
 import { appTheme } from "./theme"
 
@@ -55,6 +57,8 @@ export function AppInternal() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<Home />} />
+        <Route path="/sign-in" element={<SignIn />} />
+        <Route path="/sign-up" element={<SignUp />} />
         <Route path="/patient" element={<PatientDashboard />} />
         <Route path="/provider" element={<ProviderDashboard />} />
         <Route path="/requests/:requestId" element={<Room />} />
@@ -72,15 +76,15 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <CssBaseline />
         <ErrorBoundary fallback={errorBoundaryFallback}>
-          <Suspense fallback={<AppSkeleton />}>
-            <IdentityContextProvider>
-              <BrowserRouter>
+          <BrowserRouter>
+            <Suspense fallback={<AppSkeleton />}>
+              <IdentityContextProvider>
                 <RoomContextProvider>
                   <AppInternal />
                 </RoomContextProvider>
-              </BrowserRouter>
-            </IdentityContextProvider>
-          </Suspense>
+              </IdentityContextProvider>
+            </Suspense>
+          </BrowserRouter>
         </ErrorBoundary>
       </QueryClientProvider>
     </ThemeProvider>

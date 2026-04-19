@@ -31,7 +31,19 @@ import type {
   ViewerRole,
 } from "@carebid/shared"
 
+import { getAuthToken } from "./auth"
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8787"
+
+const authHeaders = async (): Promise<Record<string, string>> => {
+  const token = await getAuthToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+const authedFetch = async (url: string, init?: RequestInit): Promise<Response> => {
+  const headers = { ...init?.headers, ...(await authHeaders()) }
+  return fetch(url, { ...init, headers })
+}
 
 const decodeJson = async <A, I>(
   schema: Schema.Schema<A, I>,
@@ -48,19 +60,19 @@ const decodeJson = async <A, I>(
 
 export const api = {
   async getRequests() {
-    const response = await fetch(`${apiBaseUrl}/api/requests`)
+    const response = await authedFetch(`${apiBaseUrl}/api/requests`)
 
     return decodeJson(RequestListResponseSchema, response)
   },
 
   async getSession() {
-    const response = await fetch(`${apiBaseUrl}/api/session`)
+    const response = await authedFetch(`${apiBaseUrl}/api/session`)
 
     return decodeJson(SessionResponseSchema, response)
   },
 
   async switchRole(role: ViewerRole | undefined) {
-    const response = await fetch(`${apiBaseUrl}/api/session/role`, {
+    const response = await authedFetch(`${apiBaseUrl}/api/session/role`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -75,7 +87,7 @@ export const api = {
 
   async onboardPatient(input: PatientOnboardingInput) {
     const payload = Schema.decodeUnknownSync(PatientOnboardingInputSchema)(input)
-    const response = await fetch(`${apiBaseUrl}/api/onboarding/patient`, {
+    const response = await authedFetch(`${apiBaseUrl}/api/onboarding/patient`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -88,7 +100,7 @@ export const api = {
 
   async onboardProvider(input: ProviderOnboardingInput) {
     const payload = Schema.decodeUnknownSync(ProviderOnboardingInputSchema)(input)
-    const response = await fetch(`${apiBaseUrl}/api/onboarding/provider`, {
+    const response = await authedFetch(`${apiBaseUrl}/api/onboarding/provider`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -100,20 +112,20 @@ export const api = {
   },
 
   async getRoomSnapshot(requestId: string) {
-    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/room`)
+    const response = await authedFetch(`${apiBaseUrl}/api/requests/${requestId}/room`)
 
     return decodeJson(RequestRoomSnapshotSchema, response)
   },
 
   async getRoomConnection(requestId: string) {
-    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/connect`)
+    const response = await authedFetch(`${apiBaseUrl}/api/requests/${requestId}/connect`)
 
     return decodeJson(RoomConnectionResponseSchema, response)
   },
 
   async placeBid(requestId: string, input: BidInput) {
     const payload = Schema.decodeUnknownSync(BidInputSchema)(input)
-    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/bids`, {
+    const response = await authedFetch(`${apiBaseUrl}/api/requests/${requestId}/bids`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -126,7 +138,7 @@ export const api = {
 
   async withdrawBid(requestId: string, input: WithdrawBidInput) {
     const payload = Schema.decodeUnknownSync(WithdrawBidInputSchema)(input)
-    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/bids/withdraw`, {
+    const response = await authedFetch(`${apiBaseUrl}/api/requests/${requestId}/bids/withdraw`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -139,7 +151,7 @@ export const api = {
 
   async acceptBid(requestId: string, input: AcceptBidInput) {
     const payload = Schema.decodeUnknownSync(AcceptBidInputSchema)(input)
-    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/bids/accept`, {
+    const response = await authedFetch(`${apiBaseUrl}/api/requests/${requestId}/bids/accept`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -151,7 +163,7 @@ export const api = {
   },
 
   async expireRequest(requestId: string) {
-    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/expire`, {
+    const response = await authedFetch(`${apiBaseUrl}/api/requests/${requestId}/expire`, {
       method: "POST",
     })
 
@@ -160,7 +172,7 @@ export const api = {
 
   async createRequest(input: CreateCareRequestInput) {
     const payload = Schema.decodeUnknownSync(CreateCareRequestInputSchema)(input)
-    const response = await fetch(`${apiBaseUrl}/api/requests`, {
+    const response = await authedFetch(`${apiBaseUrl}/api/requests`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -172,7 +184,7 @@ export const api = {
   },
 
   async openRequest(requestId: string) {
-    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/open`, {
+    const response = await authedFetch(`${apiBaseUrl}/api/requests/${requestId}/open`, {
       method: "POST",
     })
 

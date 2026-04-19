@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import {
+  AuthError,
   DatabaseError,
   RequestNotFoundError,
   SessionError,
@@ -12,6 +13,7 @@ import {
   createRequestRoutes,
   createSessionRoutes,
 } from "./interface/routes";
+import { authMiddleware } from "./interface/middleware/auth";
 import { makeAppLayer, type AppServices } from "./layers";
 
 export const runEffect = <Result>(
@@ -25,12 +27,16 @@ export const runEffect = <Result>(
 export const handleAppErrors = <Result, R>(
   effect: Effect.Effect<
     Result,
-    DatabaseError | RequestNotFoundError | SessionError,
+    AuthError | DatabaseError | RequestNotFoundError | SessionError,
     R
   >,
 ): Effect.Effect<Result | Response, never, R> =>
   effect.pipe(
     Effect.catchTags({
+      AuthError: (e) =>
+        Effect.succeed(
+          Response.json({ ok: false, error: e.message ?? "Unauthorized" }, { status: 401 }),
+        ),
       RequestNotFoundError: () =>
         Effect.succeed(
           Response.json(
@@ -64,11 +70,14 @@ export const createApp = () => {
         return allowed.includes(origin) ? origin : "";
       },
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowHeaders: ["Content-Type"],
+      allowHeaders: ["Content-Type", "Authorization"],
     }),
   );
 
   app.get("/health", (c) => c.json({ ok: true, app: c.env.APP_NAME }));
+
+  app.use("/api/*", authMiddleware());
+
   app.route("/api", createSessionRoutes());
   app.route("/api", createOnboardingRoutes());
   app.route("/api", createRequestRoutes());

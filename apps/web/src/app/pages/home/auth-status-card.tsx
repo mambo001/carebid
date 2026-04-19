@@ -1,11 +1,21 @@
 import { Alert, Button, Card, CardContent, Chip, Stack, Typography } from "@mui/material"
 
+import { authClient } from "../../../lib/auth"
 import { useSessionQuery, useSwitchRoleMutation } from "../../../lib/queries"
+import { useAppState } from "../../context/app-state"
 
 export function AuthStatusCard() {
   const sessionQuery = useSessionQuery()
   const switchRole = useSwitchRoleMutation()
   const session = sessionQuery.data?.session
+  const neonUser = useAppState((state) => state.neonUser)
+  const setNeonUser = useAppState((state) => state.setNeonUser)
+
+  const handleSignOut = async () => {
+    await authClient.signOut()
+    setNeonUser(null)
+    window.location.href = "/"
+  }
 
   return (
     <Card elevation={0} sx={{ borderRadius: 4 }}>
@@ -13,15 +23,18 @@ export function AuthStatusCard() {
         <Stack spacing={2}>
           <div>
             <Typography variant="h6" fontWeight={700}>
-              Demo auth status
+              Auth status
             </Typography>
             <Typography color="text.secondary">
-              This is the app-facing session boundary. Neon Auth can replace this without changing the UI contracts.
+              Signed in via Neon Auth. Active role: {session?.role ?? "none"}
             </Typography>
           </div>
 
           <Alert severity="info">
-            Session mode: {session?.mode ?? "demo"} · Active role: {session?.role ?? "none"}
+            {neonUser
+              ? `Signed in as ${neonUser.name} (${neonUser.email})`
+              : "Not signed in"}
+            {" · "}Active role: {session?.role ?? "none"}
           </Alert>
 
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -33,6 +46,7 @@ export function AuthStatusCard() {
             <Button variant="outlined" onClick={() => switchRole.mutate("patient")}>Use patient role</Button>
             <Button variant="outlined" onClick={() => switchRole.mutate("provider")}>Use provider role</Button>
             <Button variant="text" onClick={() => switchRole.mutate(undefined)}>Clear role</Button>
+            <Button variant="text" color="error" onClick={handleSignOut}>Sign out</Button>
           </Stack>
         </Stack>
       </CardContent>

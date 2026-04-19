@@ -24,6 +24,7 @@ import {
   WithdrawBidInputSchema,
   providerCategories,
 } from "@carebid/shared"
+import type { AuthEnv } from "../middleware/auth"
 
 const decodeCreateCareRequestInput = Schema.decodeUnknownEither(CreateCareRequestInputSchema)
 const decodeRequestListResponse = Schema.decodeUnknownSync(RequestListResponseSchema)
@@ -38,7 +39,7 @@ const decodeBidMutationResponse = Schema.decodeUnknownSync(BidMutationResponseSc
 const decodeResolutionResponse = Schema.decodeUnknownSync(RequestResolutionResponseSchema)
 
 export const createRequestRoutes = () => {
-  const app = new Hono<{ Bindings: Env }>()
+  const app = new Hono<AuthEnv>()
 
   app.get("/requests", (c) =>
     runEffect(
@@ -61,6 +62,7 @@ export const createRequestRoutes = () => {
   })
 
   app.post("/requests", async (c) => {
+    const identity = { authUserId: c.get("authUserId"), email: c.get("authEmail") }
     const decoded = decodeCreateCareRequestInput(await c.req.json())
 
     if (Either.isLeft(decoded)) {
@@ -70,7 +72,7 @@ export const createRequestRoutes = () => {
     return runEffect(
       c.env,
       Effect.gen(function* () {
-        const item = yield* createRequest(decoded.right)
+        const item = yield* createRequest(identity, decoded.right)
         return c.json(decodeCreateCareRequestResponse({ ok: true, item }), 201)
       }).pipe(handleAppErrors),
     )

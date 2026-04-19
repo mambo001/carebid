@@ -4,3 +4,5 @@ export { ProviderDashboardPage as ProviderDashboard } from "./provider/provider-
 export { RequestRoomPage as Room } from "./requests/request-room"
 export { HomeSkeleton } from "./home/home-skeleton"
 export { SettingsPage as Settings } from "./settings/settings"
+export { SignInPage as SignIn } from "./auth/sign-in"
+export { SignUpPage as SignUp } from "./auth/sign-up"

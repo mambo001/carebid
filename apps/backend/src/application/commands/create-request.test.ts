@@ -4,8 +4,10 @@ import { Effect } from "effect"
 import { RequestRepository } from "../../domain/ports/request-repository"
 import { InMemoryRequestRepositoryLayer } from "../../infra/persistence/in-memory-request-repository"
 import { createRequest } from "./create-request"
+import type { AuthIdentity } from "../../domain/ports/session-repository"
 
 const layer = InMemoryRequestRepositoryLayer
+const testIdentity: AuthIdentity = { authUserId: "test-user-001", email: "test@carebid.local" }
 
 const run = <A, E>(effect: Effect.Effect<A, E, RequestRepository>) =>
   Effect.runPromise(Effect.provide(effect, layer))
@@ -15,7 +17,7 @@ describe("createRequest command", () => {
     const result = await run(
       Effect.gen(function* () {
         const repo = yield* RequestRepository
-        const created = yield* createRequest({
+        const created = yield* createRequest(testIdentity, {
           category: "specialist_consult",
           title: "Command test request",
           sanitizedSummary: "Testing the create request command pipeline",
