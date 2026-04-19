@@ -10,6 +10,7 @@
     "dev": "wrangler dev",
     "build": "wrangler deploy --dry-run",
     "typecheck": "tsc -p tsconfig.json",
-    "lint": "tsc -p tsconfig.json --noEmit"
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   }
 }

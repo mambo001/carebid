@@ -12,6 +12,7 @@
     "build": "bun run --filter '*' build",
     "typecheck": "bun run --filter '*' typecheck",
     "lint": "bun run --filter '*' lint",
+    "test": "bun run --filter '*' test",
     "deploy": "bun run build && wrangler deploy --config apps/backend/wrangler.jsonc && wrangler deploy --config apps/web/wrangler.jsonc",
     "db:generate": "bunx prisma generate --schema apps/backend/prisma/schema.prisma",
     "db:push": "bunx prisma db push --schema apps/backend/prisma/schema.prisma"
@@ -44,6 +45,7 @@
   "devDependencies": {
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.4"
   }
 }
