@@ -3,20 +3,83 @@ import { Effect, Either } from "effect"
 import * as Schema from "@effect/schema/Schema"
 
 import {
+  AppSessionSchema,
   CreateCareRequestResponseSchema,
   CreateCareRequestInputSchema,
+  PatientOnboardingInputSchema,
+  PatientOnboardingResponseSchema,
+  ProviderOnboardingInputSchema,
+  ProviderOnboardingResponseSchema,
   RequestListResponseSchema,
   RequestRoomSnapshotSchema,
+  SessionResponseSchema,
+  ViewerRoleSchema,
   appName,
   providerCategories,
 } from "@carebid/shared"
 
+import { getDemoSession, onboardPatient, onboardProvider, switchDemoRole } from "./demo-auth"
 import { createDemoRequest, demoRequests } from "./demo-data"
 
 export const createRouter = () => {
   const app = new Hono<{ Bindings: Env }>()
 
   app.get("/health", (c) => c.json({ ok: true, app: appName, env: c.env.APP_NAME }))
+
+  app.get("/api/session", (c) =>
+    c.json(
+      Schema.decodeUnknownSync(SessionResponseSchema)({
+        ok: true,
+        session: getDemoSession(),
+      }),
+    ),
+  )
+
+  app.post("/api/session/role", async (c) => {
+    const body = await c.req.json()
+    const session = switchDemoRole(
+      Schema.decodeUnknownSync(
+        Schema.Struct({
+          role: Schema.optional(ViewerRoleSchema),
+        }),
+      )(body).role,
+    )
+
+    return c.json(
+      Schema.decodeUnknownSync(SessionResponseSchema)({
+        ok: true,
+        session,
+      }),
+    )
+  })
+
+  app.post("/api/onboarding/patient", async (c) => {
+    const body = await c.req.json()
+    const input = Schema.decodeUnknownSync(PatientOnboardingInputSchema)(body)
+    const result = onboardPatient(input)
+
+    return c.json(
+      Schema.decodeUnknownSync(PatientOnboardingResponseSchema)({
+        ok: true,
+        ...result,
+      }),
+      201,
+    )
+  })
+
+  app.post("/api/onboarding/provider", async (c) => {
+    const body = await c.req.json()
+    const input = Schema.decodeUnknownSync(ProviderOnboardingInputSchema)(body)
+    const result = onboardProvider(input)
+
+    return c.json(
+      Schema.decodeUnknownSync(ProviderOnboardingResponseSchema)({
+        ok: true,
+        ...result,
+      }),
+      201,
+    )
+  })
 
   app.get("/api/requests", (c) =>
     c.json(

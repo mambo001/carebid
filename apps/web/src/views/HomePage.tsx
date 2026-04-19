@@ -11,6 +11,10 @@ import { Link as RouterLink } from "react-router-dom"
 
 import { providerCategories } from "@carebid/shared"
 
+import { AuthStatusCard } from "./AuthStatusCard"
+import { PatientOnboardingCard } from "./PatientOnboardingCard"
+import { ProviderOnboardingCard } from "./ProviderOnboardingCard"
+
 export function HomePage() {
   return (
     <Stack spacing={4}>
@@ -35,6 +39,17 @@ export function HomePage() {
           Enter provider flow
         </Button>
       </Stack>
+
+      <AuthStatusCard />
+
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <PatientOnboardingCard />
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <ProviderOnboardingCard />
+        </Grid>
+      </Grid>
 
       <Grid container spacing={3}>
         {providerCategories.map((category) => (

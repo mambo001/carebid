@@ -130,6 +130,74 @@ export const ViewerContextSchema = Schema.Struct({
 })
 export type ViewerContext = typeof ViewerContextSchema.Type
 
+export const PatientProfileSchema = Schema.Struct({
+  id: Schema.String,
+  authUserId: Schema.String,
+  email: Schema.String,
+  displayName: Schema.String,
+  locationCity: Schema.String,
+  locationRegion: Schema.String,
+})
+export type PatientProfile = typeof PatientProfileSchema.Type
+
+export const ProviderProfileSchema = Schema.Struct({
+  id: Schema.String,
+  authUserId: Schema.String,
+  email: Schema.String,
+  displayName: Schema.String,
+  licenseRegion: Schema.optional(Schema.String),
+  verificationStatus: ProviderVerificationStatusSchema,
+  verificationMode: ProviderVerificationModeSchema,
+  categories: Schema.Array(ProviderCategorySchema),
+})
+export type ProviderProfile = typeof ProviderProfileSchema.Type
+
+export const AppSessionSchema = Schema.Struct({
+  mode: Schema.Literal("demo"),
+  authUserId: Schema.String,
+  email: Schema.String,
+  role: Schema.optional(ViewerRoleSchema),
+  patientProfile: Schema.optional(PatientProfileSchema),
+  providerProfile: Schema.optional(ProviderProfileSchema),
+})
+export type AppSession = typeof AppSessionSchema.Type
+
+export const SessionResponseSchema = Schema.Struct({
+  ok: Schema.Boolean,
+  session: AppSessionSchema,
+})
+export type SessionResponse = typeof SessionResponseSchema.Type
+
+export const PatientOnboardingInputSchema = Schema.Struct({
+  displayName: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
+  email: Schema.String.pipe(Schema.minLength(3), Schema.maxLength(120)),
+  locationCity: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
+  locationRegion: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
+})
+export type PatientOnboardingInput = typeof PatientOnboardingInputSchema.Type
+
+export const ProviderOnboardingInputSchema = Schema.Struct({
+  displayName: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
+  email: Schema.String.pipe(Schema.minLength(3), Schema.maxLength(120)),
+  licenseRegion: Schema.optional(Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80))),
+  categories: Schema.Array(ProviderCategorySchema).pipe(Schema.minItems(1), Schema.maxItems(2)),
+})
+export type ProviderOnboardingInput = typeof ProviderOnboardingInputSchema.Type
+
+export const PatientOnboardingResponseSchema = Schema.Struct({
+  ok: Schema.Boolean,
+  profile: PatientProfileSchema,
+  session: AppSessionSchema,
+})
+export type PatientOnboardingResponse = typeof PatientOnboardingResponseSchema.Type
+
+export const ProviderOnboardingResponseSchema = Schema.Struct({
+  ok: Schema.Boolean,
+  profile: ProviderProfileSchema,
+  session: AppSessionSchema,
+})
+export type ProviderOnboardingResponse = typeof ProviderOnboardingResponseSchema.Type
+
 export const RequestSummarySchema = Schema.Struct({
   id: Schema.String,
   category: ProviderCategorySchema,
