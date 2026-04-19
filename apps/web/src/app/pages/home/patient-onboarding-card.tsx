@@ -4,7 +4,7 @@ import { TextField } from "mui-rff"
 
 import type { PatientOnboardingInput } from "@carebid/shared"
 
-import { usePatientOnboardingMutation } from "../../lib/queries"
+import { usePatientOnboardingMutation } from "../../../lib/queries"
 
 const required = (value: unknown) => (value ? undefined : "Required")
 

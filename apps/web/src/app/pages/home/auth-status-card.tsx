@@ -1,6 +1,6 @@
 import { Alert, Button, Card, CardContent, Chip, Stack, Typography } from "@mui/material"
 
-import { useSessionQuery, useSwitchRoleMutation } from "../../lib/queries"
+import { useSessionQuery, useSwitchRoleMutation } from "../../../lib/queries"
 
 export function AuthStatusCard() {
   const sessionQuery = useSessionQuery()

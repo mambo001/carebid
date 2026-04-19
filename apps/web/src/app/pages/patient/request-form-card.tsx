@@ -10,7 +10,7 @@ import {
 import { Form } from "react-final-form"
 import { Select, TextField } from "mui-rff"
 
-import { useCreateRequestMutation } from "../../lib/queries"
+import { useCreateRequestMutation } from "../../../lib/queries"
 import {
   bodyAreaOptions,
   createInitialRequestValues,
@@ -20,7 +20,7 @@ import {
   specialistVisitTypeOptions,
   urgencyOptions,
   type RequestFormValues,
-} from "../../lib/request-form"
+} from "../../../lib/request-form"
 
 const required = (value: unknown) => (value ? undefined : "Required")
 

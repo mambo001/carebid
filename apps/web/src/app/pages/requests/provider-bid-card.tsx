@@ -4,8 +4,8 @@ import { TextField } from "mui-rff"
 
 import type { BidInput } from "@carebid/shared"
 
-import { usePlaceBidMutation, useWithdrawBidMutation } from "../../lib/queries"
-import { useAppState } from "../context"
+import { usePlaceBidMutation, useWithdrawBidMutation } from "../../../lib/queries"
+import { useAppState } from "../../context"
 
 const required = (value: unknown) => (value ? undefined : "Required")
 

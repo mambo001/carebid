@@ -11,9 +11,9 @@ import { Link as RouterLink } from "react-router-dom"
 
 import { providerCategories } from "@carebid/shared"
 
-import { AuthStatusCard } from "./AuthStatusCard"
-import { PatientOnboardingCard } from "./PatientOnboardingCard"
-import { ProviderOnboardingCard } from "./ProviderOnboardingCard"
+import { AuthStatusCard } from "./auth-status-card"
+import { PatientOnboardingCard } from "./patient-onboarding-card"
+import { ProviderOnboardingCard } from "./provider-onboarding-card"
 
 export function HomePage() {
   return (

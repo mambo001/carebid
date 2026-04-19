@@ -11,9 +11,9 @@ import {
 } from "@mui/material"
 import { Link as RouterLink } from "react-router-dom"
 
-import { useRequestsQuery } from "../../lib/queries"
-import { useAppState } from "../context"
-import { PatientRequestFormCard } from "./PatientRequestFormCard"
+import { useRequestsQuery } from "../../../lib/queries"
+import { useAppState } from "../../context"
+import { PatientRequestFormCard } from "./request-form-card"
 
 export function PatientDashboardPage() {
   const setActiveRole = useAppState((state) => state.setActiveRole)

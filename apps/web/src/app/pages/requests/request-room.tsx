@@ -15,10 +15,10 @@ import {
 import { useEffect } from "react"
 import { useParams } from "react-router-dom"
 
-import { useAcceptBidMutation, useExpireRequestMutation, useRoomSnapshotQuery } from "../../lib/queries"
-import { useRoomSocket } from "../../lib/use-room-socket"
-import { useAppState } from "../context"
-import { ProviderBidCard } from "./ProviderBidCard"
+import { useAcceptBidMutation, useExpireRequestMutation, useRoomSnapshotQuery } from "../../../lib/queries"
+import { useRoomSocket } from "../../../lib/use-room-socket"
+import { useAppState } from "../../context"
+import { ProviderBidCard } from "./provider-bid-card"
 
 export function RequestRoomPage() {
   const { requestId = "unknown" } = useParams()

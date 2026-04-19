@@ -11,8 +11,8 @@ import {
 } from "@mui/material"
 import { Link as RouterLink } from "react-router-dom"
 
-import { useRequestsQuery } from "../../lib/queries"
-import { useAppState } from "../context"
+import { useRequestsQuery } from "../../../lib/queries"
+import { useAppState } from "../../context"
 
 export function ProviderDashboardPage() {
   const setActiveRole = useAppState((state) => state.setActiveRole)
