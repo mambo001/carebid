@@ -2,10 +2,14 @@ import { Effect, Either } from "effect"
 
 import type { WithdrawBidInput } from "@carebid/shared"
 
+import type { RoomState } from "../../../domain/entities"
+import type { DatabaseError, RoomNotOpenError } from "../../../domain/errors"
 import { RoomGateway } from "../../../domain/ports/room-gateway"
 import { withdrawBid } from "../../../domain/room"
 
-export const withdrawBidCommand = (input: WithdrawBidInput) =>
+export const withdrawBidCommand = (
+  input: WithdrawBidInput,
+): Effect.Effect<RoomState, RoomNotOpenError | DatabaseError, RoomGateway> =>
   Effect.gen(function* () {
     const gateway = yield* RoomGateway
     const state = yield* gateway.getRoomState(input.requestId)
