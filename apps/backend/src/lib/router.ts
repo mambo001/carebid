@@ -3,6 +3,7 @@ import { Effect, Either } from "effect"
 import * as Schema from "@effect/schema/Schema"
 
 import {
+  AcceptBidInputSchema,
   BidInputSchema,
   BidMutationResponseSchema,
   CreateCareRequestResponseSchema,
@@ -12,6 +13,7 @@ import {
   ProviderOnboardingInputSchema,
   ProviderOnboardingResponseSchema,
   RequestListResponseSchema,
+  RequestResolutionResponseSchema,
   RoomConnectionResponseSchema,
   RequestRoomSnapshotSchema,
   SessionResponseSchema,
@@ -202,6 +204,37 @@ export const createRouter = () => {
     const json = await response.json()
 
     return c.json(Schema.decodeUnknownSync(BidMutationResponseSchema)(json))
+  })
+
+  app.post("/api/requests/:requestId/bids/accept", async (c) => {
+    const requestId = c.req.param("requestId")
+    const input = Schema.decodeUnknownSync(AcceptBidInputSchema)(await c.req.json())
+    const room = c.env.REQUEST_ROOM_DO.get(c.env.REQUEST_ROOM_DO.idFromName(requestId))
+    const response = await room.fetch(`https://do.internal/bids/accept?requestId=${requestId}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
+    })
+    const json = await response.json()
+
+    return c.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)(json), {
+      status: response.status as 200 | 409,
+    })
+  })
+
+  app.post("/api/requests/:requestId/expire", async (c) => {
+    const requestId = c.req.param("requestId")
+    const room = c.env.REQUEST_ROOM_DO.get(c.env.REQUEST_ROOM_DO.idFromName(requestId))
+    const response = await room.fetch(`https://do.internal/expire?requestId=${requestId}`, {
+      method: "POST",
+    })
+    const json = await response.json()
+
+    return c.json(Schema.decodeUnknownSync(RequestResolutionResponseSchema)(json), {
+      status: response.status as 200 | 409,
+    })
   })
 
   return app

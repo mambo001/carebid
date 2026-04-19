@@ -1,6 +1,7 @@
 import * as Schema from "@effect/schema/Schema"
 
 import {
+  AcceptBidInputSchema,
   BidInputSchema,
   BidMutationResponseSchema,
   PatientOnboardingInputSchema,
@@ -10,6 +11,7 @@ import {
   CreateCareRequestInputSchema,
   CreateCareRequestResponseSchema,
   RequestListResponseSchema,
+  RequestResolutionResponseSchema,
   RoomConnectionResponseSchema,
   RequestRoomSnapshotSchema,
   RoomSnapshotMessageSchema,
@@ -19,6 +21,7 @@ import {
 } from "@carebid/shared"
 
 import type {
+  AcceptBidInput,
   BidInput,
   CreateCareRequestInput,
   PatientOnboardingInput,
@@ -131,6 +134,27 @@ export const api = {
     })
 
     return decodeJson(BidMutationResponseSchema, response)
+  },
+
+  async acceptBid(requestId: string, input: AcceptBidInput) {
+    const payload = Schema.decodeUnknownSync(AcceptBidInputSchema)(input)
+    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/bids/accept`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+
+    return decodeJson(RequestResolutionResponseSchema, response)
+  },
+
+  async expireRequest(requestId: string) {
+    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/expire`, {
+      method: "POST",
+    })
+
+    return decodeJson(RequestResolutionResponseSchema, response)
   },
 
   async createRequest(input: CreateCareRequestInput) {

@@ -1,8 +1,10 @@
 import { Hono } from "hono"
 
 import {
+  AcceptBidInputSchema,
   BidInputSchema,
   BidMutationResponseSchema,
+  RequestResolutionResponseSchema,
   RequestRoomSnapshotSchema,
   RoomSnapshotMessageSchema,
   WithdrawBidInputSchema,
@@ -24,6 +26,7 @@ type RoomBid = {
 type RoomState = {
   requestId: string
   status: "draft" | "open" | "awarded" | "expired"
+  awardedBidId?: string
   connectedViewers: number
   bids: RoomBid[]
 }
@@ -45,6 +48,7 @@ export class RequestRoomDurableObject {
       stored ?? {
         requestId,
         status: "open",
+        awardedBidId: undefined,
         connectedViewers: 0,
         bids: [],
       }
@@ -55,6 +59,7 @@ export class RequestRoomDurableObject {
     return Schema.decodeUnknownSync(RequestRoomSnapshotSchema)({
       requestId: roomState.requestId,
       status: roomState.status,
+      awardedBidId: roomState.awardedBidId,
       connectedViewers: roomState.connectedViewers,
       leaderboard: roomState.bids
         .filter((bid) => bid.status === "active")
@@ -68,6 +73,17 @@ export class RequestRoomDurableObject {
           notes: bid.notes,
         })),
     })
+  }
+
+  private requestClosedResponse(roomState: RoomState) {
+    return Response.json(
+      {
+        ok: false,
+        error: "Request is no longer open",
+        snapshot: this.createSnapshot(roomState),
+      },
+      { status: 409 },
+    )
   }
 
   private async persistAndBroadcast(roomState: RoomState) {
@@ -142,6 +158,11 @@ export class RequestRoomDurableObject {
     if (request.method === "POST" && url.pathname === "/bids/place") {
       const input = Schema.decodeUnknownSync(BidInputSchema)(await request.json())
       const roomState = await this.getRoomState(requestId)
+
+      if (roomState.status !== "open") {
+        return this.requestClosedResponse(roomState)
+      }
+
       const existingBidIndex = roomState.bids.findIndex((bid) => bid.providerId === input.providerId)
 
       const nextBid: RoomBid = {
@@ -174,6 +195,10 @@ export class RequestRoomDurableObject {
       const input = Schema.decodeUnknownSync(WithdrawBidInputSchema)(await request.json())
       const roomState = await this.getRoomState(requestId)
 
+      if (roomState.status !== "open") {
+        return this.requestClosedResponse(roomState)
+      }
+
       roomState.bids = roomState.bids.map((bid) =>
         bid.providerId === input.providerId ? { ...bid, status: "withdrawn" } : bid,
       )
@@ -182,6 +207,50 @@ export class RequestRoomDurableObject {
 
       return Response.json(
         Schema.decodeUnknownSync(BidMutationResponseSchema)({
+          ok: true,
+          snapshot: this.createSnapshot(roomState),
+        }),
+      )
+    }
+
+    if (request.method === "POST" && url.pathname === "/bids/accept") {
+      const input = Schema.decodeUnknownSync(AcceptBidInputSchema)(await request.json())
+      const roomState = await this.getRoomState(requestId)
+
+      if (roomState.status !== "open") {
+        return this.requestClosedResponse(roomState)
+      }
+
+      roomState.status = "awarded"
+      roomState.awardedBidId = input.bidId
+      roomState.bids = roomState.bids.map((bid) =>
+        bid.bidId === input.bidId ? bid : { ...bid, status: "withdrawn" },
+      )
+
+      await this.persistAndBroadcast(roomState)
+
+      return Response.json(
+        Schema.decodeUnknownSync(RequestResolutionResponseSchema)({
+          ok: true,
+          snapshot: this.createSnapshot(roomState),
+        }),
+      )
+    }
+
+    if (request.method === "POST" && url.pathname === "/expire") {
+      const roomState = await this.getRoomState(requestId)
+
+      if (roomState.status !== "open") {
+        return this.requestClosedResponse(roomState)
+      }
+
+      roomState.status = "expired"
+      roomState.bids = roomState.bids.map((bid) => ({ ...bid, status: "withdrawn" }))
+
+      await this.persistAndBroadcast(roomState)
+
+      return Response.json(
+        Schema.decodeUnknownSync(RequestResolutionResponseSchema)({
           ok: true,
           snapshot: this.createSnapshot(roomState),
         }),

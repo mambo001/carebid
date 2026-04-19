@@ -302,6 +302,7 @@ export const ErrorPayloadSchema = Schema.Struct({
 export const RequestRoomSnapshotSchema = Schema.Struct({
   requestId: Schema.String,
   status: RequestStatusSchema,
+  awardedBidId: Schema.optional(Schema.String),
   connectedViewers: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
   leaderboard: Schema.Array(
     Schema.Struct({
@@ -321,6 +322,12 @@ export const BidMutationResponseSchema = Schema.Struct({
   snapshot: RequestRoomSnapshotSchema,
 })
 export type BidMutationResponse = typeof BidMutationResponseSchema.Type
+
+export const RequestResolutionResponseSchema = Schema.Struct({
+  ok: Schema.Boolean,
+  snapshot: RequestRoomSnapshotSchema,
+})
+export type RequestResolutionResponse = typeof RequestResolutionResponseSchema.Type
 
 export const RoomSnapshotMessageSchema = Schema.Struct({
   type: Schema.Literal("snapshot"),

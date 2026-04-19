@@ -1,5 +1,7 @@
 import {
   Alert,
+  Button,
+  Chip,
   Card,
   CardContent,
   Divider,
@@ -13,7 +15,7 @@ import {
 import { useEffect } from "react"
 import { useParams } from "react-router-dom"
 
-import { useRoomSnapshotQuery } from "../lib/queries"
+import { useAcceptBidMutation, useExpireRequestMutation, useRoomSnapshotQuery } from "../lib/queries"
 import { useRoomSocket } from "../lib/use-room-socket"
 import { useAppStore } from "../store/app-store"
 import { ProviderBidCard } from "./ProviderBidCard"
@@ -23,8 +25,12 @@ export function RequestRoomPage() {
   const setLastVisitedRequestId = useAppStore((state) => state.setLastVisitedRequestId)
   const activeRole = useAppStore((state) => state.activeRole)
   const roomQuery = useRoomSnapshotQuery(requestId)
+  const acceptBid = useAcceptBidMutation(requestId)
+  const expireRequest = useExpireRequestMutation(requestId)
 
   useRoomSocket(requestId)
+
+  const snapshot = roomQuery.data
 
   useEffect(() => {
     setLastVisitedRequestId(requestId)
@@ -41,6 +47,12 @@ export function RequestRoomPage() {
           Request room
         </Typography>
         <Typography color="text.secondary">Request ID: {requestId}</Typography>
+        {snapshot && (
+          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+            <Chip label={`Status: ${snapshot.status}`} color={snapshot.status === "open" ? "success" : "default"} />
+            {snapshot.awardedBidId && <Chip label={`Awarded bid: ${snapshot.awardedBidId}`} />}
+          </Stack>
+        )}
       </div>
 
       <Card elevation={0} sx={{ borderRadius: 4 }}>
@@ -55,26 +67,50 @@ export function RequestRoomPage() {
             <Divider />
             {roomQuery.isLoading && <Skeleton variant="rounded" height={180} />}
             <List disablePadding>
-              {roomQuery.data?.leaderboard.map((entry, index) => (
+              {snapshot?.leaderboard.map((entry, index) => (
                 <ListItem key={entry.bidId} disablePadding sx={{ py: 1.5 }}>
                   <ListItemText
                     primary={`${index + 1}. ${entry.providerDisplayName}`}
-                    secondary={`ETA ${entry.availableDate}`}
+                    secondary={`ETA ${entry.availableDate}${entry.notes ? ` · ${entry.notes}` : ""}`}
                   />
-                  <Typography fontWeight={700}>
-                    PHP {(entry.amountCents / 100).toLocaleString()}
-                  </Typography>
+                  <Stack direction={{ xs: "column", md: "row" }} spacing={1} alignItems={{ md: "center" }}>
+                    <Typography fontWeight={700}>
+                      PHP {(entry.amountCents / 100).toLocaleString()}
+                    </Typography>
+                    {snapshot.awardedBidId === entry.bidId && <Chip label="Accepted" color="success" />}
+                    {activeRole === "patient" && snapshot.status === "open" && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        disabled={acceptBid.isPending}
+                        onClick={() => acceptBid.mutate({ requestId, bidId: entry.bidId })}
+                      >
+                        Accept
+                      </Button>
+                    )}
+                  </Stack>
                 </ListItem>
               ))}
             </List>
-            {roomQuery.isSuccess && roomQuery.data.leaderboard.length === 0 && (
+            {roomQuery.isSuccess && snapshot?.leaderboard.length === 0 && (
               <Alert severity="warning">No bids in this room yet.</Alert>
+            )}
+
+            {activeRole === "patient" && snapshot?.status === "open" && (
+              <Button
+                variant="text"
+                color="warning"
+                disabled={expireRequest.isPending}
+                onClick={() => expireRequest.mutate()}
+              >
+                {expireRequest.isPending ? "Expiring..." : "Expire request"}
+              </Button>
             )}
           </Stack>
         </CardContent>
       </Card>
 
-      {activeRole === "provider" && <ProviderBidCard requestId={requestId} />}
+      {activeRole === "provider" && snapshot?.status === "open" && <ProviderBidCard requestId={requestId} />}
     </Stack>
   )
 }

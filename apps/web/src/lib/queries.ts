@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "./api"
 import type {
+  AcceptBidInput,
   BidInput,
   CreateCareRequestInput,
   PatientOnboardingInput,
@@ -97,6 +98,30 @@ export const useWithdrawBidMutation = (requestId: string) => {
     mutationFn: (input: WithdrawBidInput) => api.withdrawBid(requestId, input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: requestKeys.room(requestId) })
+    },
+  })
+}
+
+export const useAcceptBidMutation = (requestId: string) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: AcceptBidInput) => api.acceptBid(requestId, input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: requestKeys.room(requestId) })
+      await queryClient.invalidateQueries({ queryKey: requestKeys.all })
+    },
+  })
+}
+
+export const useExpireRequestMutation = (requestId: string) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => api.expireRequest(requestId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: requestKeys.room(requestId) })
+      await queryClient.invalidateQueries({ queryKey: requestKeys.all })
     },
   })
 }
