@@ -147,6 +147,12 @@ export const RequestSummarySchema = Schema.Struct({
 })
 export type RequestSummary = typeof RequestSummarySchema.Type
 
+export const CreateCareRequestResponseSchema = Schema.Struct({
+  ok: Schema.Boolean,
+  item: RequestSummarySchema,
+})
+export type CreateCareRequestResponse = typeof CreateCareRequestResponseSchema.Type
+
 export const RequestListResponseSchema = Schema.Struct({
   items: Schema.Array(RequestSummarySchema),
   filters: Schema.Array(ProviderCategorySchema),

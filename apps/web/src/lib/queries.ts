@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "./api"
+import type { CreateCareRequestInput } from "@carebid/shared"
 
 export const requestKeys = {
   all: ["requests"] as const,
@@ -19,3 +20,14 @@ export const useRoomSnapshotQuery = (requestId: string) =>
     queryFn: () => api.getRoomSnapshot(requestId),
     enabled: Boolean(requestId),
   })
+
+export const useCreateRequestMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: CreateCareRequestInput) => api.createRequest(input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: requestKeys.all })
+    },
+  })
+}

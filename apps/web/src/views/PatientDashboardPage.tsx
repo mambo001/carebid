@@ -13,6 +13,7 @@ import { Link as RouterLink } from "react-router-dom"
 
 import { useAppStore } from "../store/app-store"
 import { useRequestsQuery } from "../lib/queries"
+import { PatientRequestFormCard } from "./PatientRequestFormCard"
 
 export function PatientDashboardPage() {
   const setActiveRole = useAppStore((state) => state.setActiveRole)
@@ -40,6 +41,10 @@ export function PatientDashboardPage() {
       </Stack>
 
       <Grid container spacing={3}>
+        <Grid size={12}>
+          <PatientRequestFormCard />
+        </Grid>
+
         {requestsQuery.isLoading &&
           [0, 1].map((item) => (
             <Grid key={item} size={{ xs: 12, md: 6 }}>

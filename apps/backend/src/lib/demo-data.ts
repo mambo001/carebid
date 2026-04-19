@@ -1,4 +1,4 @@
-import type { RequestSummary } from "@carebid/shared"
+import type { CreateCareRequestInput, RequestSummary } from "@carebid/shared"
 
 export const demoRequests: RequestSummary[] = [
   {
@@ -34,3 +34,25 @@ export const demoRequests: RequestSummary[] = [
     expiresAt: "2026-04-22T08:00:00.000Z",
   },
 ]
+
+export const createDemoRequest = (input: CreateCareRequestInput): RequestSummary => {
+  const item: RequestSummary = {
+    id: `req-${crypto.randomUUID()}`,
+    category: input.category,
+    title: input.title,
+    sanitizedSummary: input.sanitizedSummary,
+    targetBudgetCents: input.targetBudgetCents,
+    locationCity: input.locationCity,
+    locationRegion: input.locationRegion,
+    preferredStartDate: input.preferredStartDate,
+    preferredEndDate: input.preferredEndDate,
+    urgency: input.urgency,
+    serviceMode: input.serviceMode,
+    status: "draft",
+    expiresAt: input.expiresAt,
+  }
+
+  demoRequests.unshift(item)
+
+  return item
+}

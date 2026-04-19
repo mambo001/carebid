@@ -3,6 +3,7 @@ import { Effect, Either } from "effect"
 import * as Schema from "@effect/schema/Schema"
 
 import {
+  CreateCareRequestResponseSchema,
   CreateCareRequestInputSchema,
   RequestListResponseSchema,
   RequestRoomSnapshotSchema,
@@ -10,7 +11,7 @@ import {
   providerCategories,
 } from "@carebid/shared"
 
-import { demoRequests } from "./demo-data"
+import { createDemoRequest, demoRequests } from "./demo-data"
 
 export const createRouter = () => {
   const app = new Hono<{ Bindings: Env }>()
@@ -44,6 +45,38 @@ export const createRouter = () => {
         }
 
         return c.json({ ok: true, item: decoded.right })
+      }),
+    )
+
+    return response
+  })
+
+  app.post("/api/requests", async (c) => {
+    const response = await Effect.runPromise(
+      Effect.gen(function* () {
+        const body = yield* Effect.tryPromise(() => c.req.json())
+        const decoded = Schema.decodeUnknownEither(CreateCareRequestInputSchema)(body)
+
+        if (Either.isLeft(decoded)) {
+          return c.json(
+            {
+              ok: false,
+              error: "Invalid request payload",
+              issue: decoded.left,
+            },
+            400,
+          )
+        }
+
+        const item = createDemoRequest(decoded.right)
+
+        return c.json(
+          Schema.decodeUnknownSync(CreateCareRequestResponseSchema)({
+            ok: true,
+            item,
+          }),
+          201,
+        )
       }),
     )
 
