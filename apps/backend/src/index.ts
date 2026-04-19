@@ -4,6 +4,7 @@ import {
   BidInputSchema,
   BidMutationResponseSchema,
   RequestRoomSnapshotSchema,
+  RoomSnapshotMessageSchema,
   WithdrawBidInputSchema,
 } from "@carebid/shared"
 import * as Schema from "@effect/schema/Schema"
@@ -30,6 +31,8 @@ type RoomState = {
 const roomStateKey = "room-state"
 
 export class RequestRoomDurableObject {
+  private sessions = new Set<WebSocket>()
+
   constructor(
     readonly state: DurableObjectState,
     readonly env: Env,
@@ -67,9 +70,68 @@ export class RequestRoomDurableObject {
     })
   }
 
+  private async persistAndBroadcast(roomState: RoomState) {
+    await this.state.storage.put(roomStateKey, roomState)
+
+    const message = JSON.stringify(
+      Schema.decodeUnknownSync(RoomSnapshotMessageSchema)({
+        type: "snapshot",
+        snapshot: this.createSnapshot(roomState),
+      }),
+    )
+
+    for (const session of this.sessions) {
+      try {
+        session.send(message)
+      } catch {
+        this.sessions.delete(session)
+      }
+    }
+  }
+
+  private async connectWebSocket(requestId: string): Promise<Response> {
+    const roomState = await this.getRoomState(requestId)
+    const pair = new WebSocketPair()
+    const client = pair[0]
+    const server = pair[1]
+
+    server.accept()
+    this.sessions.add(server)
+
+    roomState.connectedViewers += 1
+    await this.persistAndBroadcast(roomState)
+
+    server.addEventListener("close", () => {
+      this.sessions.delete(server)
+      void this.state.blockConcurrencyWhile(async () => {
+        const current = await this.getRoomState(requestId)
+        current.connectedViewers = Math.max(0, current.connectedViewers - 1)
+        await this.persistAndBroadcast(current)
+      })
+    })
+
+    server.send(
+      JSON.stringify(
+        Schema.decodeUnknownSync(RoomSnapshotMessageSchema)({
+          type: "snapshot",
+          snapshot: this.createSnapshot(roomState),
+        }),
+      ),
+    )
+
+    return new Response(null, {
+      status: 101,
+      webSocket: client,
+    })
+  }
+
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
     const requestId = url.searchParams.get("requestId") ?? this.state.id.toString()
+
+    if (request.method === "GET" && url.pathname === "/connect") {
+      return this.connectWebSocket(requestId)
+    }
 
     if (request.method === "GET" && url.pathname === "/snapshot") {
       const snapshot = this.createSnapshot(await this.getRoomState(requestId))
@@ -98,7 +160,7 @@ export class RequestRoomDurableObject {
         roomState.bids.push(nextBid)
       }
 
-      await this.state.storage.put(roomStateKey, roomState)
+      await this.persistAndBroadcast(roomState)
 
       return Response.json(
         Schema.decodeUnknownSync(BidMutationResponseSchema)({
@@ -116,7 +178,7 @@ export class RequestRoomDurableObject {
         bid.providerId === input.providerId ? { ...bid, status: "withdrawn" } : bid,
       )
 
-      await this.state.storage.put(roomStateKey, roomState)
+      await this.persistAndBroadcast(roomState)
 
       return Response.json(
         Schema.decodeUnknownSync(BidMutationResponseSchema)({

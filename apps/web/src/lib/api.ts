@@ -10,7 +10,9 @@ import {
   CreateCareRequestInputSchema,
   CreateCareRequestResponseSchema,
   RequestListResponseSchema,
+  RoomConnectionResponseSchema,
   RequestRoomSnapshotSchema,
+  RoomSnapshotMessageSchema,
   SessionResponseSchema,
   WithdrawBidInputSchema,
   ViewerRoleSchema,
@@ -99,6 +101,12 @@ export const api = {
     return decodeJson(RequestRoomSnapshotSchema, response)
   },
 
+  async getRoomConnection(requestId: string) {
+    const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/connect`)
+
+    return decodeJson(RoomConnectionResponseSchema, response)
+  },
+
   async placeBid(requestId: string, input: BidInput) {
     const payload = Schema.decodeUnknownSync(BidInputSchema)(input)
     const response = await fetch(`${apiBaseUrl}/api/requests/${requestId}/bids`, {
@@ -138,3 +146,6 @@ export const api = {
     return decodeJson(CreateCareRequestResponseSchema, response)
   },
 }
+
+export const decodeRoomMessage = (message: string) =>
+  Schema.decodeUnknownSync(RoomSnapshotMessageSchema)(JSON.parse(message))

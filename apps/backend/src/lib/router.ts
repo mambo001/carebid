@@ -12,6 +12,7 @@ import {
   ProviderOnboardingInputSchema,
   ProviderOnboardingResponseSchema,
   RequestListResponseSchema,
+  RoomConnectionResponseSchema,
   RequestRoomSnapshotSchema,
   SessionResponseSchema,
   WithdrawBidInputSchema,
@@ -156,6 +157,19 @@ export const createRouter = () => {
     const snapshot = Schema.decodeUnknownSync(RequestRoomSnapshotSchema)(json)
 
     return c.json(snapshot)
+  })
+
+  app.get("/api/requests/:requestId/connect", (c) => {
+    const requestId = c.req.param("requestId")
+    const url = new URL(c.req.url)
+    const protocol = url.protocol === "https:" ? "wss:" : "ws:"
+
+    return c.json(
+      Schema.decodeUnknownSync(RoomConnectionResponseSchema)({
+        requestId,
+        websocketUrl: `${protocol}//${url.host}/request-room/connect?requestId=${requestId}`,
+      }),
+    )
   })
 
   app.post("/api/requests/:requestId/bids", async (c) => {

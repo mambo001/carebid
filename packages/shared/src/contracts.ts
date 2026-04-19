@@ -230,6 +230,12 @@ export const RequestListResponseSchema = Schema.Struct({
 })
 export type RequestListResponse = typeof RequestListResponseSchema.Type
 
+export const RoomConnectionResponseSchema = Schema.Struct({
+  requestId: Schema.String,
+  websocketUrl: Schema.String,
+})
+export type RoomConnectionResponse = typeof RoomConnectionResponseSchema.Type
+
 export const ProviderLeaderboardBidSchema = Schema.Struct({
   bidId: Schema.String,
   position: Schema.Number.pipe(Schema.int(), Schema.positive()),
@@ -315,6 +321,12 @@ export const BidMutationResponseSchema = Schema.Struct({
   snapshot: RequestRoomSnapshotSchema,
 })
 export type BidMutationResponse = typeof BidMutationResponseSchema.Type
+
+export const RoomSnapshotMessageSchema = Schema.Struct({
+  type: Schema.Literal("snapshot"),
+  snapshot: RequestRoomSnapshotSchema,
+})
+export type RoomSnapshotMessage = typeof RoomSnapshotMessageSchema.Type
 
 export const RoomEventSchema = Schema.Struct({
   type: RoomEventTypeSchema,
