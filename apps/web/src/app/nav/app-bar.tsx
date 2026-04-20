@@ -20,7 +20,7 @@ export function AppBar() {
     <MuiAppBar position="sticky" color="inherit" elevation={0}>
       <Toolbar sx={{ justifyContent: "space-between", py: 1 }}>
         <Typography variant="h6" fontWeight={800} color="primary.main">
-          {APP_NAME} - DEPLOYMENT_TEST
+          {APP_NAME}
         </Typography>
 
         <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1 }}>
