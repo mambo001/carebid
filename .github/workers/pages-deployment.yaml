@@ -1,0 +1,30 @@
+on:
+  push:
+    branches: ["master"]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    name: Deploy to Cloudflare Pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: bun install && bun run build
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/web/dist --project-name=carebid
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
