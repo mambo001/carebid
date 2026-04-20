@@ -1,21 +1,32 @@
-import { Alert, Button, Card, CardContent, Stack, Typography } from "@mui/material"
-import { Form } from "react-final-form"
-import { TextField } from "mui-rff"
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { Form } from "react-final-form";
+import { TextField } from "mui-rff";
 
-import type { BidInput } from "@carebid/shared"
+import type { BidInput } from "@carebid/shared";
 
-import { usePlaceBidMutation, useWithdrawBidMutation } from "../../../lib/queries"
-import { useAppState } from "../../context"
+import {
+  usePlaceBidMutation,
+  useWithdrawBidMutation,
+} from "../../../lib/queries";
+import { useAppState } from "../../context";
 
-const required = (value: unknown) => (value ? undefined : "Required")
+const required = (value: unknown) => (value ? undefined : "Required");
 
 export function ProviderBidCard({ requestId }: { requestId: string }) {
-  const session = useAppState((state) => state.session)
-  const placeBid = usePlaceBidMutation(requestId)
-  const withdrawBid = useWithdrawBidMutation(requestId)
+  const session = useAppState((state) => state.session);
+  const placeBid = usePlaceBidMutation(requestId);
+  const withdrawBid = useWithdrawBidMutation(requestId);
 
-  const providerId = session?.providerProfile?.id ?? "demo-provider"
-  const providerDisplayName = session?.providerProfile?.displayName ?? "Demo Provider"
+  const providerId = session?.providerProfile?.id ?? "demo-provider";
+  const providerDisplayName =
+    session?.providerProfile?.displayName ?? "Demo Provider";
 
   const initialValues: BidInput = {
     requestId,
@@ -24,7 +35,7 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
     amount: 1200000,
     availableDate: "2026-04-25",
     notes: "Open slot available this week.",
-  }
+  };
 
   return (
     <Card elevation={0} sx={{ borderRadius: 4 }}>
@@ -52,12 +63,16 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
             render={({ handleSubmit, submitting }) => (
               <form onSubmit={handleSubmit} noValidate>
                 <Stack spacing={2}>
-                  {placeBid.isSuccess && <Alert severity="success">Bid saved to the room.</Alert>}
-                  {withdrawBid.isSuccess && <Alert severity="info">Bid withdrawn from the room.</Alert>}
+                  {placeBid.isSuccess && (
+                    <Alert severity="success">Bid saved to the room.</Alert>
+                  )}
+                  {withdrawBid.isSuccess && (
+                    <Alert severity="info">Bid withdrawn from the room.</Alert>
+                  )}
 
                   <TextField
                     name="amount"
-                    label="Bid amount (cents)"
+                    label="Bid amount"
                     type="number"
                     required
                     fieldProps={{ validate: required }}
@@ -73,16 +88,26 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
                   <TextField name="notes" label="Notes" multiline minRows={2} />
 
                   <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
-                    <Button type="submit" variant="contained" disabled={submitting || placeBid.isPending}>
-                      {placeBid.isPending ? "Saving bid..." : "Place or update bid"}
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={submitting || placeBid.isPending}
+                    >
+                      {placeBid.isPending
+                        ? "Saving bid..."
+                        : "Place or update bid"}
                     </Button>
                     <Button
                       type="button"
                       variant="outlined"
                       disabled={withdrawBid.isPending}
-                      onClick={() => withdrawBid.mutate({ requestId, providerId })}
+                      onClick={() =>
+                        withdrawBid.mutate({ requestId, providerId })
+                      }
                     >
-                      {withdrawBid.isPending ? "Withdrawing..." : "Withdraw bid"}
+                      {withdrawBid.isPending
+                        ? "Withdrawing..."
+                        : "Withdraw bid"}
                     </Button>
                   </Stack>
                 </Stack>
@@ -92,5 +117,5 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
         </Stack>
       </CardContent>
     </Card>
-  )
+  );
 }

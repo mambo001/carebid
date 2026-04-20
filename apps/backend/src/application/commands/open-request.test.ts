@@ -28,7 +28,7 @@ describe("openRequest command", () => {
           preferredEndDate: "2026-05-05",
           urgency: "soon",
           serviceMode: "in_person",
-          details: { imagingType: "mri", bodyArea: "head_neck" },
+          details: { imagingType: "mri", bodyArea: "head" },
           expiresAt: "2026-05-02T00:00:00.000Z",
         })
         return yield* openRequest(created.id)

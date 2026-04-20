@@ -16,12 +16,23 @@ import {
 import { authMiddleware } from "./interface/middleware/auth";
 import { makeAppLayer, type AppServices } from "./layers";
 
-export const runEffect = <Result>(
+const runtimeCache = new Map<string, ManagedRuntime.ManagedRuntime<AppServices, never>>();
+
+const getRuntime = (env: Env): ManagedRuntime.ManagedRuntime<AppServices, never> => {
+  const key = env.DATABASE_URL ?? "";
+  let runtime = runtimeCache.get(key);
+  if (!runtime) {
+    runtime = ManagedRuntime.make(makeAppLayer(env));
+    runtimeCache.set(key, runtime);
+  }
+  return runtime;
+};
+
+export const runEffect = <Result, Error>(
   env: Env,
-  effect: Effect.Effect<Result, never, AppServices>,
+  effect: Effect.Effect<Result, Error, AppServices>,
 ): Promise<Result> => {
-  const runtime = ManagedRuntime.make(makeAppLayer(env));
-  return runtime.runPromise(effect);
+  return getRuntime(env).runPromise(effect);
 };
 
 export const handleAppErrors = <Result, R>(

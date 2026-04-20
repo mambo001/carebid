@@ -55,6 +55,104 @@ const query = <Result>(fn: () => Promise<Result>): Effect.Effect<Result, Databas
     catch: (error) => new DatabaseError({ message: String(error) }),
   })
 
+type RawSessionRow = {
+  auth_user_id: string
+  email: string
+  role: "patient" | "provider" | null
+  patient_profile: PatientProfile | null
+  provider_profile: {
+    id: string
+    authUserId: string
+    email: string
+    displayName: string
+    licenseRegion: string | null
+    verificationStatus: "verified"
+    verificationMode: "demo_auto"
+    categories: Array<"specialist_consult" | "imaging">
+  } | null
+}
+
+const sessionSnapshotSql = `
+  WITH session_row AS (
+    INSERT INTO "DemoSession" ("authUserId", "email", "createdAt", "updatedAt")
+    VALUES ($1, $2, NOW(), NOW())
+    ON CONFLICT ("authUserId")
+    DO UPDATE SET "email" = EXCLUDED."email", "updatedAt" = NOW()
+    RETURNING "authUserId", "email", "activeRole"
+  )
+  SELECT
+    session_row."authUserId" AS auth_user_id,
+    session_row."email" AS email,
+    session_row."activeRole" AS role,
+    (
+      SELECT row_to_json(patient_payload)
+      FROM (
+        SELECT
+          p."id",
+          p."authUserId",
+          p."email",
+          p."displayName",
+          p."locationCity",
+          p."locationRegion"
+        FROM "Patient" p
+        WHERE p."authUserId" = $1
+        LIMIT 1
+      ) AS patient_payload
+    ) AS patient_profile,
+    (
+      SELECT row_to_json(provider_payload)
+      FROM (
+        SELECT
+          p."id",
+          p."authUserId",
+          p."email",
+          p."displayName",
+          p."licenseRegion",
+          p."verificationStatus",
+          p."verificationMode",
+          COALESCE(array_agg(pca."category") FILTER (WHERE pca."category" IS NOT NULL), '{}') AS categories
+        FROM "Provider" p
+        LEFT JOIN "ProviderCategoryAssignment" pca ON pca."providerId" = p."id"
+        WHERE p."authUserId" = $1
+        GROUP BY p."id"
+        LIMIT 1
+      ) AS provider_payload
+    ) AS provider_profile
+  FROM session_row
+`
+
+const buildSessionFromRow = (row: RawSessionRow): AppSession => ({
+  mode: "demo",
+  authUserId: row.auth_user_id,
+  email: row.email,
+  role: row.role ?? undefined,
+  patientProfile: row.patient_profile ?? undefined,
+  providerProfile: row.provider_profile
+    ? {
+        id: row.provider_profile.id,
+        authUserId: row.provider_profile.authUserId,
+        email: row.provider_profile.email,
+        displayName: row.provider_profile.displayName,
+        licenseRegion: row.provider_profile.licenseRegion ?? undefined,
+        verificationStatus: row.provider_profile.verificationStatus,
+        verificationMode: row.provider_profile.verificationMode,
+        categories: row.provider_profile.categories,
+      }
+    : undefined,
+})
+
+const loadSessionSnapshot = (
+  db: PrismaClient,
+  identity: AuthIdentity,
+): Effect.Effect<AppSession, DatabaseError> =>
+  Effect.gen(function* () {
+    const rows = yield* query(() =>
+      db.$queryRawUnsafe<Array<RawSessionRow>>(sessionSnapshotSql, identity.authUserId, identity.email),
+    )
+
+    return buildSessionFromRow(rows[0])
+  })
+
 const buildSession = (
   db: PrismaClient,
   identity: AuthIdentity,
@@ -91,7 +189,7 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
   const prisma = createPrismaClient(databaseUrl)
 
   return {
-    getSession: (identity) => buildSession(prisma, identity),
+      getSession: (identity) => loadSessionSnapshot(prisma, identity),
 
     switchRole: (identity, role) =>
       Effect.gen(function* () {
@@ -106,7 +204,7 @@ export const makePrismaSessionRepository = (databaseUrl: string): SessionReposit
             },
           }),
         )
-        return yield* buildSession(prisma, identity)
+        return yield* loadSessionSnapshot(prisma, identity)
       }),
 
     savePatient: (identity, input: PatientOnboardingInput) =>

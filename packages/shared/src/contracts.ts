@@ -101,7 +101,7 @@ export const CreateCareRequestInputSchema = Schema.Struct({
     Schema.minLength(2),
     Schema.maxLength(500),
   ),
-  targetBudget: Schema.Number.pipe(Schema.int(), Schema.positive()),
+  targetBudget: Schema.Number,
   locationCity: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
   locationRegion: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(80)),
   preferredStartDate: Schema.String,
@@ -120,7 +120,7 @@ export const BidInputSchema = Schema.Struct({
     Schema.minLength(1),
     Schema.maxLength(120),
   ),
-  amount: Schema.Number.pipe(Schema.int(), Schema.positive()),
+  amount: Schema.Number,
   availableDate: Schema.String,
   notes: Schema.optional(Schema.String.pipe(Schema.maxLength(280))),
 });

@@ -61,7 +61,7 @@ describe("InMemoryRequestRepository", () => {
           preferredEndDate: "2026-05-10",
           urgency: "routine",
           serviceMode: "telehealth",
-          details: { visitType: "initial_consult", specialty: "Dermatology" },
+          details: { visitType: "new_issue", specialty: "Dermatology" },
           expiresAt: "2026-05-02T00:00:00.000Z",
         })
       }),

@@ -41,8 +41,8 @@ export const useSwitchRoleMutation = () => {
 
   return useMutation({
     mutationFn: (role: ViewerRole | undefined) => api.switchRole(role),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: requestKeys.session })
+    onSuccess: (data) => {
+      queryClient.setQueryData(requestKeys.session, data)
     },
   })
 }

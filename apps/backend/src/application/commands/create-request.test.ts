@@ -28,7 +28,7 @@ describe("createRequest command", () => {
           preferredEndDate: "2026-05-10",
           urgency: "routine",
           serviceMode: "telehealth",
-          details: { visitType: "initial_consult", specialty: "Cardiology" },
+          details: { visitType: "new_issue", specialty: "Cardiology" },
           expiresAt: "2026-05-02T00:00:00.000Z",
         })
         const list = yield* repo.listRequests()
