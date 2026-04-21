@@ -38,6 +38,7 @@ export const makeInMemorySessionRepository = (): SessionRepository => {
     },
 
     savePatient: (identity, input: PatientOnboardingInput) => {
+      
       currentIdentity = identity
       patientProfile = {
         id: `pat-${crypto.randomUUID()}`,
