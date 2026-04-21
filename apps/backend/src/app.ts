@@ -15,18 +15,10 @@ import {
 } from "./interface/routes";
 import { authMiddleware } from "./interface/middleware/auth";
 import { makeAppLayer, type AppServices } from "./layers";
+import { getAllowedOrigins, getDatabaseUrl } from "./shared/config/runtime-env";
 
-const runtimeCache = new Map<string, ManagedRuntime.ManagedRuntime<AppServices, never>>();
-
-const getRuntime = (env: Env): ManagedRuntime.ManagedRuntime<AppServices, never> => {
-  const key = env.DATABASE_URL ?? "";
-  let runtime = runtimeCache.get(key);
-  if (!runtime) {
-    runtime = ManagedRuntime.make(makeAppLayer(env));
-    runtimeCache.set(key, runtime);
-  }
-  return runtime;
-};
+const getRuntime = (env: Env): ManagedRuntime.ManagedRuntime<AppServices, never> =>
+  ManagedRuntime.make(makeAppLayer(env));
 
 export const runEffect = <Result, Error>(
   env: Env,
@@ -76,7 +68,7 @@ export const createApp = () => {
     "*",
     cors({
       origin: (origin, c) => {
-        const allowed = c.env.ALLOWED_ORIGINS?.split(",") ?? [];
+        const allowed = getAllowedOrigins(c.env);
         allowed.push("http://localhost:5173");
         return allowed.includes(origin) ? origin : "";
       },

@@ -1,6 +1,6 @@
 import { type PropsWithChildren, useEffect } from "react"
 
-import { authClient } from "../../lib/auth"
+import { authClient, setStoredAuthToken } from "../../lib/auth"
 import { useSessionQuery } from "../../lib/queries"
 import { useAppState } from "./app-state"
 
@@ -21,6 +21,7 @@ export function IdentityContextProvider({ children }: PropsWithChildren) {
     const syncNeonUser = async () => {
       try {
         const result = await authClient.getSession()
+        setStoredAuthToken(result.data?.session?.token ?? null)
         if (!cancelled && result.data?.user) {
           setNeonUser({
             id: result.data.user.id,
@@ -29,6 +30,7 @@ export function IdentityContextProvider({ children }: PropsWithChildren) {
           })
         }
       } catch {
+        setStoredAuthToken(null)
         if (!cancelled) {
           setNeonUser(null)
         }

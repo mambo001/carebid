@@ -1,6 +1,6 @@
 import { Alert, Button, Card, CardContent, Chip, Stack, Typography } from "@mui/material"
 
-import { authClient } from "../../../lib/auth"
+import { authClient, setStoredAuthToken } from "../../../lib/auth"
 import { useSessionQuery, useSwitchRoleMutation } from "../../../lib/queries"
 import { useAppState } from "../../context/app-state"
 
@@ -13,6 +13,7 @@ export function AuthStatusCard() {
 
   const handleSignOut = async () => {
     await authClient.signOut()
+    setStoredAuthToken(null)
     setNeonUser(null)
     window.location.href = "/"
   }

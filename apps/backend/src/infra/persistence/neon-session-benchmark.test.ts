@@ -97,7 +97,8 @@ const measure = async <T>(label: string, operation: () => Promise<T>): Promise<T
   }
 }
 
-describe.runIf(Boolean(databaseUrl) && shouldRunBenchmarks)("Neon session integration benchmark", () => {
+const shouldRun = Boolean(databaseUrl) && shouldRunBenchmarks
+;(shouldRun ? describe : describe.skip)("Neon session integration benchmark", () => {
   const identity = {
     authUserId: `neon-benchmark-${Date.now()}`,
     email: `neon-benchmark-${Date.now()}@carebid.local`,

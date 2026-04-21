@@ -12,7 +12,7 @@ import { Form } from "react-final-form"
 import { TextField } from "mui-rff"
 import { useNavigate } from "react-router-dom"
 
-import { authClient } from "../../../lib/auth"
+import { authClient, setStoredAuthToken } from "../../../lib/auth"
 import { useAppState } from "../../context/app-state"
 
 type SignInValues = {
@@ -47,6 +47,8 @@ export function SignInPage() {
           name: result.data.user.name,
         })
       }
+
+      setStoredAuthToken(result.data?.token ?? null)
 
       navigate("/")
     } catch (err) {

@@ -31,7 +31,7 @@ import type {
   ViewerRole,
 } from "@carebid/shared"
 
-import { getAuthToken } from "./auth"
+import { getAuthToken, setStoredAuthToken } from "./auth"
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8787"
 
@@ -42,7 +42,13 @@ const authHeaders = async (): Promise<Record<string, string>> => {
 
 const authedFetch = async (url: string, init?: RequestInit): Promise<Response> => {
   const headers = { ...init?.headers, ...(await authHeaders()) }
-  return fetch(url, { ...init, headers })
+  const response = await fetch(url, { ...init, headers })
+
+  if (response.status === 401) {
+    setStoredAuthToken(null)
+  }
+
+  return response
 }
 
 const decodeJson = async <A, I>(
