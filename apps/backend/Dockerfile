@@ -12,6 +12,7 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 WORKDIR /app/apps/backend
+RUN ln -s /app/node_modules /app/apps/backend/node_modules
 
 EXPOSE 8080
 
