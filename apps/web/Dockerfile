@@ -11,6 +11,8 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
+RUN bun install --frozen-lockfile
+
 WORKDIR /app/apps/web
 RUN bun run build
 
@@ -29,4 +31,4 @@ WORKDIR /app/apps/web
 
 EXPOSE 5173
 
-CMD ["bun", "run", "vite", "--host", "--port", "5173"]
+CMD ["bunx", "vite", "preview", "--host", "0.0.0.0", "--port", "5173"]
