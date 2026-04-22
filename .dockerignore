@@ -2,6 +2,7 @@
 .github
 .wrangler
 node_modules
+apps/*/node_modules
 dist
 coverage
 .env

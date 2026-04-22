@@ -1,5 +1,5 @@
 import { Effect, Layer } from "effect"
-import { BidHistoryEventType, Prisma, PrismaClient } from "@prisma/client"
+import { Prisma, PrismaClient } from "@prisma/client"
 
 import type { AcceptBidInput, BidInput, WithdrawBidInput } from "@carebid/shared"
 
@@ -171,7 +171,7 @@ export const makePrismaRoomRepository = (databaseUrl: string): RoomRepository =>
             careRequestId: input.requestId,
             providerId: input.providerId,
             actorAuthUserId,
-            eventType: existing ? BidHistoryEventType.updated : BidHistoryEventType.placed,
+            eventType: existing ? "updated" : "placed",
             oldAmountCents: existing?.amount,
             newAmountCents: input.amount,
             oldAvailableDate: existing?.availableDate,
@@ -210,7 +210,7 @@ export const makePrismaRoomRepository = (databaseUrl: string): RoomRepository =>
             careRequestId: input.requestId,
             providerId: input.providerId,
             actorAuthUserId,
-            eventType: BidHistoryEventType.withdrawn,
+            eventType: "withdrawn",
             oldAmountCents: existing.amount,
             newAmountCents: existing.amount,
             oldAvailableDate: existing.availableDate,
@@ -266,7 +266,7 @@ export const makePrismaRoomRepository = (databaseUrl: string): RoomRepository =>
             careRequestId: input.requestId,
             providerId: acceptedBid.providerId,
             actorAuthUserId,
-            eventType: BidHistoryEventType.accepted,
+            eventType: "accepted",
             oldAmountCents: acceptedBid.amount,
             newAmountCents: acceptedBid.amount,
             oldAvailableDate: acceptedBid.availableDate,
@@ -280,7 +280,7 @@ export const makePrismaRoomRepository = (databaseUrl: string): RoomRepository =>
                 careRequestId: input.requestId,
                 providerId: bid.providerId,
                 actorAuthUserId,
-                eventType: BidHistoryEventType.rejected,
+                eventType: "rejected",
                 oldAmountCents: bid.amount,
                 newAmountCents: bid.amount,
                 oldAvailableDate: bid.availableDate,
@@ -320,7 +320,7 @@ export const makePrismaRoomRepository = (databaseUrl: string): RoomRepository =>
                 careRequestId: requestId,
                 providerId: bid.providerId,
                 actorAuthUserId,
-                eventType: BidHistoryEventType.expired,
+                eventType: "expired",
                 oldAmountCents: bid.amount,
                 newAmountCents: bid.amount,
                 oldAvailableDate: bid.availableDate,
