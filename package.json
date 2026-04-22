@@ -15,7 +15,13 @@
     "test": "bun run --filter '*' test",
     "deploy": "bun run build && wrangler deploy --config apps/backend/wrangler.jsonc && wrangler deploy --config apps/web/wrangler.jsonc",
     "db:generate": "bunx prisma generate --schema apps/backend/prisma/schema.prisma",
-    "db:push": "bunx prisma db push --schema apps/backend/prisma/schema.prisma"
+    "db:push": "bunx prisma db push --schema apps/backend/prisma/schema.prisma",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f",
+    "infra:restart": "docker compose restart",
+    "infra:seed": "bun run --filter @carebid/backend seed",
+    "infra:ps": "docker compose ps"
   },
   "dependencies": {
     "@effect/schema": "^0.75.5",
