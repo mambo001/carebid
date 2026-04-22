@@ -8,6 +8,7 @@ import { makePrismaRoomRepositoryLayer } from "./infra/persistence/room-reposito
 import { makePrismaSessionRepositoryLayer } from "./infra/persistence/session-repository"
 import { makeFirebaseAuthProviderLayer } from "./infra/auth/firebase-auth-provider"
 import { makeRedisRoomNotifierLayer } from "./infra/realtime/redis-room-notifier"
+import { LiveSseRegistryLayer } from "./infra/realtime/sse-registry"
 
 export const makeAppLayer = (config: AppConfig) => {
   const requestLayer = config.databaseUrl
@@ -22,7 +23,14 @@ export const makeAppLayer = (config: AppConfig) => {
   const authLayer = makeFirebaseAuthProviderLayer(config)
   const notifierLayer = makeRedisRoomNotifierLayer(config)
 
-  return Layer.mergeAll(requestLayer, sessionLayer, roomLayer, authLayer, notifierLayer)
+  return Layer.mergeAll(
+    requestLayer,
+    sessionLayer,
+    roomLayer,
+    authLayer,
+    notifierLayer,
+    LiveSseRegistryLayer,
+  )
 }
 
 export type AppServices = Layer.Layer.Success<ReturnType<typeof makeAppLayer>>

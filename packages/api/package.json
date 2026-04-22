@@ -1,0 +1,20 @@
+{
+  "name": "@carebid/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@carebid/shared": "workspace:*",
+    "@effect/platform": "^0.96.0",
+    "effect": "^3.21.1"
+  },
+  "scripts": {
+    "dev": "echo 'api package has no dev server'",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  }
+}

@@ -1,60 +1,50 @@
-import type { Response } from "express"
+import { Effect, Layer, Queue, Ref } from "effect"
 
-type Client = {
-  readonly response: Response
-  readonly heartbeat: NodeJS.Timeout
-}
+import { SseRegistry } from "../../domain/ports/sse-registry"
 
-export class SseRegistry {
-  private readonly rooms = new Map<string, Set<Client>>()
+type Rooms = Map<string, Set<Queue.Queue<string>>>
 
-  add(roomId: string, response: Response) {
-    const client: Client = {
-      response,
-      heartbeat: setInterval(() => {
-        response.write(": keep-alive\n\n")
-      }, 25_000),
-    }
+export const LiveSseRegistryLayer = Layer.effect(
+  SseRegistry,
+  Effect.gen(function* () {
+    const rooms = yield* Ref.make<Rooms>(new Map())
 
-    const existing = this.rooms.get(roomId) ?? new Set<Client>()
-    existing.add(client)
-    this.rooms.set(roomId, existing)
+    const add = (roomId: string, queue: Queue.Queue<string>) =>
+      Ref.update(rooms, (current) => {
+        const next = new Map(current)
+        const clients = new Set(next.get(roomId) ?? [])
+        clients.add(queue)
+        next.set(roomId, clients)
+        return next
+      }).pipe(
+        Effect.map(() =>
+          Effect.gen(function* () {
+            yield* Queue.shutdown(queue)
+            yield* Ref.update(rooms, (current) => {
+              const next = new Map(current)
+              const clients = new Set(next.get(roomId) ?? [])
+              clients.delete(queue)
+              if (clients.size === 0) {
+                next.delete(roomId)
+              } else {
+                next.set(roomId, clients)
+              }
+              return next
+            })
+          }),
+        ),
+      )
 
-    return () => this.remove(roomId, client)
-  }
+    const broadcast = (roomId: string, payload: string) =>
+      Ref.get(rooms).pipe(
+        Effect.flatMap((current) =>
+          Effect.forEach(current.get(roomId) ?? [], (queue) => Queue.offer(queue, payload), { discard: true }),
+        ),
+      )
 
-  broadcast(roomId: string, payload: string) {
-    const clients = this.rooms.get(roomId)
-    if (!clients) {
-      return
-    }
+    const hasSubscribers = (roomId: string) =>
+      Ref.get(rooms).pipe(Effect.map((current) => (current.get(roomId)?.size ?? 0) > 0))
 
-    for (const client of clients) {
-      client.response.write(`data: ${payload}\n\n`)
-    }
-  }
-
-  hasSubscribers(roomId: string) {
-    return (this.rooms.get(roomId)?.size ?? 0) > 0
-  }
-
-  private remove(roomId: string, client: Client) {
-    clearInterval(client.heartbeat)
-    const clients = this.rooms.get(roomId)
-    if (!clients) {
-      return
-    }
-
-    clients.delete(client)
-    if (clients.size === 0) {
-      this.rooms.delete(roomId)
-    }
-  }
-}
-
-let registry: SseRegistry | null = null
-
-export const getSseRegistry = () => {
-  registry ??= new SseRegistry()
-  return registry
-}
+    return { add, broadcast, hasSubscribers }
+  }),
+)

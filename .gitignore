@@ -10,3 +10,5 @@ dist/
 .dev.vars.*
 coverage/
 apps/backend/generated/
+.worktrees/
+docs
