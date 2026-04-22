@@ -1,5 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app"
 import {
+  connectAuthEmulator,
   createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
@@ -16,10 +17,18 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
+const authEmulatorUrl = import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_URL
+
 const authTokenStorageKey = "carebid.auth-token"
+let authEmulatorConnected = false
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
 export const authClient = getAuth(app)
+
+if (authEmulatorUrl && !authEmulatorConnected) {
+  connectAuthEmulator(authClient, authEmulatorUrl, { disableWarnings: true })
+  authEmulatorConnected = true
+}
 
 export type AuthSession = {
   user: { id: string; email: string; name: string }

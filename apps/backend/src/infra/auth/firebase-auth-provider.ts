@@ -8,8 +8,9 @@ import { AuthProvider, type AuthUser } from "../../domain/ports/auth-provider"
 
 const getFirebaseAuth = (config: AppConfig) => {
   if (getApps().length === 0) {
+    const useEmulator = Boolean(process.env.FIREBASE_AUTH_EMULATOR_HOST)
     initializeApp({
-      credential: applicationDefault(),
+      credential: useEmulator ? undefined : applicationDefault(),
       projectId: config.firebaseProjectId,
     })
   }
