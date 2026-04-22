@@ -11,7 +11,8 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
-RUN bun run --filter @carebid/backend build
+WORKDIR /app/apps/backend
+RUN bun build src/index.ts --outdir dist --target node
 
 FROM node:20-alpine AS runner
 

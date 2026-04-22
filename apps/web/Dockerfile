@@ -11,7 +11,8 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
-RUN bun run --filter @carebid/web build
+WORKDIR /app/apps/web
+RUN bun run build
 
 FROM oven/bun:1.2.21 AS runner
 
