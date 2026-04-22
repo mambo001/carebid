@@ -1,45 +1,54 @@
+import express from "express"
 import { Effect } from "effect"
-import { Hono } from "hono"
 import * as Schema from "@effect/schema/Schema"
 
-import { getSession } from "../../application/queries/get-session"
+import type { AppConfig } from "../../shared/config/runtime-env"
+import { runEffect, sendErrorResponse } from "../../app"
 import { switchRole } from "../../application/commands/switch-role"
-import { handleAppErrors, runEffect } from "../../app"
+import { getSession } from "../../application/queries/get-session"
 import { SessionResponseSchema, ViewerRoleSchema } from "@carebid/shared"
-import type { AuthEnv } from "../middleware/auth"
+import type { AuthenticatedRequest } from "../middleware/auth"
 
 const decodeSessionResponse = Schema.decodeUnknownSync(SessionResponseSchema)
-const decodeRoleBody = Schema.decodeUnknownSync(
-  Schema.Struct({ role: Schema.optional(ViewerRoleSchema) }),
-)
+const decodeRoleBody = Schema.decodeUnknownSync(Schema.Struct({ role: Schema.optional(ViewerRoleSchema) }))
 
-export const createSessionRoutes = () => {
-  const app = new Hono<AuthEnv>()
+export const createSessionRoutes = (config: AppConfig) => {
+  const router = express.Router()
 
-  app.get("/session", (c) => {
-    const identity = { authUserId: c.get("authUserId"), email: c.get("authEmail") }
+  router.get("/session", async (req: AuthenticatedRequest, res) => {
+    try {
+      const identity = { authUserId: req.authUserId!, email: req.authEmail! }
+      const payload = await runEffect(
+        config,
+        Effect.gen(function* () {
+          const session = yield* getSession(identity)
+          return decodeSessionResponse({ ok: true, session })
+        }),
+      )
 
-    return runEffect(
-      c.env,
-      Effect.gen(function* () {
-        const session = yield* getSession(identity)
-        return c.json(decodeSessionResponse({ ok: true, session }))
-      }).pipe(handleAppErrors),
-    )
+      res.json(payload)
+    } catch (error) {
+      sendErrorResponse(error, res)
+    }
   })
 
-  app.post("/session/role", async (c) => {
-    const identity = { authUserId: c.get("authUserId"), email: c.get("authEmail") }
-    const { role } = decodeRoleBody(await c.req.json())
+  router.post("/session/role", async (req: AuthenticatedRequest, res) => {
+    try {
+      const identity = { authUserId: req.authUserId!, email: req.authEmail! }
+      const { role } = decodeRoleBody(req.body)
+      const payload = await runEffect(
+        config,
+        Effect.gen(function* () {
+          const session = yield* switchRole(identity, role)
+          return decodeSessionResponse({ ok: true, session })
+        }),
+      )
 
-    return runEffect(
-      c.env,
-      Effect.gen(function* () {
-        const session = yield* switchRole(identity, role)
-        return c.json(decodeSessionResponse({ ok: true, session }))
-      }).pipe(handleAppErrors),
-    )
+      res.json(payload)
+    } catch (error) {
+      sendErrorResponse(error, res)
+    }
   })
 
-  return app
+  return router
 }

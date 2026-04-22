@@ -1,14 +1,13 @@
 import { Effect } from "effect"
 
 import type { RoomState } from "../../../domain/entities"
-import type { DatabaseError } from "../../../domain/errors"
-import { RoomGateway } from "../../../domain/ports/room-gateway"
+import type { DatabaseError, RequestNotFoundError } from "../../../domain/errors"
+import { RoomRepository } from "../../../domain/ports/room-repository"
 
 export const getRoomSnapshotQuery = (
   requestId: string,
-  initialStatus?: RoomState["status"],
-): Effect.Effect<RoomState, DatabaseError, RoomGateway> =>
+): Effect.Effect<RoomState, DatabaseError | RequestNotFoundError, RoomRepository> =>
   Effect.gen(function* () {
-    const gateway = yield* RoomGateway
-    return yield* gateway.getRoomState(requestId, initialStatus)
+    const repo = yield* RoomRepository
+    return yield* repo.getRoomState(requestId)
   })

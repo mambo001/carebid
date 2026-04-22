@@ -1,25 +1,19 @@
-import { Effect, Either } from "effect"
+import { Effect } from "effect"
 
+import type { AuthIdentity } from "../../../domain/ports/session-repository"
 import type { RoomState } from "../../../domain/entities"
-import type { DatabaseError, RoomNotOpenError } from "../../../domain/errors"
-import { RoomGateway } from "../../../domain/ports/room-gateway"
-import { expireRoom } from "../../../domain/room"
+import type { DatabaseError, RequestNotFoundError, RoomNotOpenError } from "../../../domain/errors"
+import { RoomNotifier } from "../../../domain/ports/room-notifier"
+import { RoomRepository } from "../../../domain/ports/room-repository"
 
 export const expireRoomCommand = (
+  identity: AuthIdentity,
   requestId: string,
-): Effect.Effect<RoomState, RoomNotOpenError | DatabaseError, RoomGateway> =>
+): Effect.Effect<RoomState, RoomNotOpenError | RequestNotFoundError | DatabaseError, RoomRepository | RoomNotifier> =>
   Effect.gen(function* () {
-    const gateway = yield* RoomGateway
-    const state = yield* gateway.getRoomState(requestId)
-    const result = expireRoom(state)
-
-    if (Either.isLeft(result)) {
-      return yield* Effect.fail(result.left)
-    }
-
-    const next = result.right
-    yield* gateway.putRoomState(next)
-    yield* gateway.broadcast(next)
-
+    const repo = yield* RoomRepository
+    const notifier = yield* RoomNotifier
+    const next = yield* repo.expireRoom(identity.authUserId, requestId)
+    yield* notifier.notifyRoomUpdated(requestId)
     return next
   })

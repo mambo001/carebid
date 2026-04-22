@@ -1,8 +1,20 @@
-import { PrismaNeon } from "@prisma/adapter-neon"
 import { PrismaClient } from "@prisma/client"
 
-export const createPrismaClient = (connectionString: string) => {
-  const adapter = new PrismaNeon({ connectionString })
+const prismaClients = new Map<string, PrismaClient>()
 
-  return new PrismaClient({ adapter })
+export const createPrismaClient = (connectionString: string) => {
+  const cached = prismaClients.get(connectionString)
+
+  if (cached) {
+    return cached
+  }
+
+  const client = new PrismaClient({
+    datasources: {
+      db: { url: connectionString },
+    },
+  })
+
+  prismaClients.set(connectionString, client)
+  return client
 }

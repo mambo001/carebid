@@ -1,11 +1,27 @@
-const processEnv =
-  (globalThis as typeof globalThis & {
-    process?: { env?: Record<string, string | undefined> }
-  }).process?.env ?? {}
+const processEnv = process.env
 
-export const getDatabaseUrl = (env: Env): string => env.DATABASE_URL || processEnv.DATABASE_URL || ""
-
-export const getAllowedOrigins = (env: Env): Array<string> => {
-  const configured = env.ALLOWED_ORIGINS || processEnv.ALLOWED_ORIGINS || ""
-  return configured.split(",").map((item) => item.trim()).filter(Boolean)
+export type AppConfig = {
+  appName: string
+  port: number
+  databaseUrl: string
+  allowedOrigins: Array<string>
+  redisUrl?: string
+  firebaseProjectId?: string
 }
+
+const parsePort = (value: string | undefined) => {
+  const parsed = Number(value ?? "8080")
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 8080
+}
+
+export const getAppConfig = (): AppConfig => ({
+  appName: processEnv.APP_NAME || "CareBid",
+  port: parsePort(processEnv.PORT),
+  databaseUrl: processEnv.DATABASE_URL || "",
+  allowedOrigins: (processEnv.ALLOWED_ORIGINS || "http://localhost:5173")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean),
+  redisUrl: processEnv.REDIS_URL || undefined,
+  firebaseProjectId: processEnv.FIREBASE_PROJECT_ID || undefined,
+})

@@ -1,7 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
 
-import { api, decodeRoomMessage } from "./api"
+import { createRoomStreamUrl, decodeRoomMessage } from "./api"
+import { getAuthToken } from "./auth"
 import { requestKeys } from "./queries"
 
 export const useRoomSocket = (requestId: string) => {
@@ -12,17 +13,21 @@ export const useRoomSocket = (requestId: string) => {
       return
     }
 
-    let socket: WebSocket | null = null
+    let stream: EventSource | null = null
     let closed = false
 
-    void api.getRoomConnection(requestId).then(({ websocketUrl }) => {
+    void getAuthToken().then((token) => {
       if (closed) {
         return
       }
 
-      socket = new WebSocket(websocketUrl)
+      if (!token) {
+        return
+      }
 
-      socket.addEventListener("message", (event) => {
+      stream = new EventSource(createRoomStreamUrl(requestId, token))
+
+      stream.addEventListener("message", (event) => {
         const message = decodeRoomMessage(String(event.data))
 
         queryClient.setQueryData(requestKeys.room(requestId), message.snapshot)
@@ -31,7 +36,7 @@ export const useRoomSocket = (requestId: string) => {
 
     return () => {
       closed = true
-      socket?.close()
+      stream?.close()
     }
   }, [queryClient, requestId])
 }

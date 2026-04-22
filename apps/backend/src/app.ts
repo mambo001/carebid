@@ -1,89 +1,62 @@
-import { Effect, ManagedRuntime } from "effect";
-import { Hono } from "hono";
-import { cors } from "hono/cors";
+import cors from "cors"
+import express from "express"
+import { Effect, ManagedRuntime } from "effect"
 
-import {
-  AuthError,
-  DatabaseError,
-  RequestNotFoundError,
-  SessionError,
-} from "./domain/errors";
-import {
-  createOnboardingRoutes,
-  createRequestRoutes,
-  createSessionRoutes,
-} from "./interface/routes";
-import { authMiddleware } from "./interface/middleware/auth";
-import { makeAppLayer, type AppServices } from "./layers";
-import { getAllowedOrigins, getDatabaseUrl } from "./shared/config/runtime-env";
+import type { AppConfig } from "./shared/config/runtime-env"
+import { AuthError, BidNotFoundError, DatabaseError, RequestNotFoundError, RoomNotOpenError, SessionError } from "./domain/errors"
+import { makeAppLayer, type AppServices } from "./layers"
+import { createOnboardingRoutes, createRequestRoutes, createSessionRoutes, createStreamRoutes } from "./interface/routes"
+import { authMiddleware } from "./interface/middleware/auth"
 
-const getRuntime = (env: Env): ManagedRuntime.ManagedRuntime<AppServices, never> =>
-  ManagedRuntime.make(makeAppLayer(env));
+const getRuntime = (config: AppConfig): ManagedRuntime.ManagedRuntime<AppServices, never> =>
+  ManagedRuntime.make(makeAppLayer(config))
 
 export const runEffect = <Result, Error>(
-  env: Env,
+  config: AppConfig,
   effect: Effect.Effect<Result, Error, AppServices>,
-): Promise<Result> => {
-  return getRuntime(env).runPromise(effect);
-};
+): Promise<Result> => getRuntime(config).runPromise(effect)
 
-export const handleAppErrors = <Result, R>(
-  effect: Effect.Effect<
-    Result,
-    AuthError | DatabaseError | RequestNotFoundError | SessionError,
-    R
-  >,
-): Effect.Effect<Result | Response, never, R> =>
-  effect.pipe(
-    Effect.catchTags({
-      AuthError: (e) =>
-        Effect.succeed(
-          Response.json({ ok: false, error: e.message ?? "Unauthorized" }, { status: 401 }),
-        ),
-      RequestNotFoundError: () =>
-        Effect.succeed(
-          Response.json(
-            { ok: false, error: "Request not found" },
-            { status: 404 },
-          ),
-        ),
-      SessionError: (e) =>
-        Effect.succeed(
-          Response.json({ ok: false, error: e.message }, { status: 400 }),
-        ),
-      DatabaseError: (e) =>
-        Effect.succeed(
-          Response.json(
-            { ok: false, error: e.message ?? "Unexpected backend error" },
-            { status: 500 },
-          ),
-        ),
-    }),
-  );
+export const sendErrorResponse = (error: unknown, res: express.Response) => {
+  if (error instanceof AuthError) {
+    return res.status(401).json({ ok: false, error: error.message ?? "Unauthorized" })
+  }
 
-export const createApp = () => {
-  const app = new Hono<{ Bindings: Env }>();
+  if (error instanceof RequestNotFoundError) {
+    return res.status(404).json({ ok: false, error: error.message ?? "Request not found" })
+  }
+
+  if (error instanceof SessionError || error instanceof RoomNotOpenError || error instanceof BidNotFoundError) {
+    return res.status(409).json({ ok: false, error: error.message ?? "Request conflict" })
+  }
+
+  if (error instanceof DatabaseError) {
+    return res.status(500).json({ ok: false, error: error.message ?? "Unexpected backend error" })
+  }
+
+  return res.status(500).json({ ok: false, error: "Unexpected backend error" })
+}
+
+export const createApp = (config: AppConfig) => {
+  const app = express()
 
   app.use(
-    "*",
     cors({
-      origin: (origin, c) => {
-        const allowed = getAllowedOrigins(c.env);
-        allowed.push("http://localhost:5173");
-        return allowed.includes(origin) ? origin : "";
-      },
-      allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization"],
+      origin: config.allowedOrigins,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
     }),
-  );
+  )
+  app.use(express.json())
 
-  app.get("/health", (c) => c.json({ ok: true, app: c.env.APP_NAME }));
+  app.get("/health", (_req, res) => {
+    res.json({ ok: true, app: config.appName })
+  })
 
-  app.use("/api/*", authMiddleware());
+  app.use("/api", authMiddleware(config))
+  app.use("/api", createSessionRoutes(config))
+  app.use("/api", createOnboardingRoutes(config))
+  app.use("/api", createRequestRoutes(config))
+  app.use("/api", createStreamRoutes(config))
 
-  app.route("/api", createSessionRoutes());
-  app.route("/api", createOnboardingRoutes());
-  app.route("/api", createRequestRoutes());
-
-  return app;
-};
+  return app
+}

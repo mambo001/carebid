@@ -12,7 +12,7 @@ import { Form } from "react-final-form"
 import { TextField } from "mui-rff"
 import { useNavigate } from "react-router-dom"
 
-import { authClient, setStoredAuthToken } from "../../../lib/auth"
+import { signInUser } from "../../../lib/auth"
 import { useAppState } from "../../context/app-state"
 
 type SignInValues = {
@@ -30,25 +30,15 @@ export function SignInPage() {
   const handleSubmit = async (values: SignInValues) => {
     setError(null)
     try {
-      const result = await authClient.signIn.email({
-        email: values.email,
-        password: values.password,
-      })
+      const user = await signInUser(values.email, values.password)
 
-      if (result.error) {
-        setError(result.error.message ?? "Sign in failed")
-        return
-      }
-
-      if (result.data?.user) {
+      if (user) {
         setNeonUser({
-          id: result.data.user.id,
-          email: result.data.user.email,
-          name: result.data.user.name,
+          id: user.id,
+          email: user.email,
+          name: user.name,
         })
       }
-
-      setStoredAuthToken(result.data?.token ?? null)
 
       navigate("/")
     } catch (err) {

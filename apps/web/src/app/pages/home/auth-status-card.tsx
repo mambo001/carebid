@@ -1,6 +1,6 @@
 import { Alert, Button, Card, CardContent, Chip, Stack, Typography } from "@mui/material"
 
-import { authClient, setStoredAuthToken } from "../../../lib/auth"
+import { signOutUser } from "../../../lib/auth"
 import { useSessionQuery, useSwitchRoleMutation } from "../../../lib/queries"
 import { useAppState } from "../../context/app-state"
 
@@ -12,8 +12,7 @@ export function AuthStatusCard() {
   const setNeonUser = useAppState((state) => state.setNeonUser)
 
   const handleSignOut = async () => {
-    await authClient.signOut()
-    setStoredAuthToken(null)
+    await signOutUser()
     setNeonUser(null)
     window.location.href = "/"
   }
@@ -27,7 +26,7 @@ export function AuthStatusCard() {
               Auth status
             </Typography>
             <Typography color="text.secondary">
-              Signed in via Neon Auth. Active role: {session?.role ?? "none"}
+              Signed in via Firebase Auth. Active role: {session?.role ?? "none"}
             </Typography>
           </div>
 

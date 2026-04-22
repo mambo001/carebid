@@ -1,28 +1,28 @@
-import { Layer } from "effect";
+import { Layer } from "effect"
 
-import { InMemoryRequestRepositoryLayer } from "./infra/persistence/in-memory-request-repository";
-import { InMemorySessionRepositoryLayer } from "./infra/persistence/in-memory-session-repository";
-import { makePrismaRequestRepositoryLayer } from "./infra/persistence/request-repository";
-import { makePrismaSessionRepositoryLayer } from "./infra/persistence/session-repository";
-import { makeNeonAuthProviderLayer } from "./infra/auth/neon-auth-provider";
-import { getDatabaseUrl } from "./shared/config/runtime-env";
+import type { AppConfig } from "./shared/config/runtime-env"
+import { InMemoryRequestRepositoryLayer } from "./infra/persistence/in-memory-request-repository"
+import { InMemorySessionRepositoryLayer } from "./infra/persistence/in-memory-session-repository"
+import { makePrismaRequestRepositoryLayer } from "./infra/persistence/request-repository"
+import { makePrismaRoomRepositoryLayer } from "./infra/persistence/room-repository"
+import { makePrismaSessionRepositoryLayer } from "./infra/persistence/session-repository"
+import { makeFirebaseAuthProviderLayer } from "./infra/auth/firebase-auth-provider"
+import { makeRedisRoomNotifierLayer } from "./infra/realtime/redis-room-notifier"
 
-export const makeAppLayer = (env: Env) => {
-  const databaseUrl = getDatabaseUrl(env);
+export const makeAppLayer = (config: AppConfig) => {
+  const requestLayer = config.databaseUrl
+    ? makePrismaRequestRepositoryLayer(config.databaseUrl)
+    : InMemoryRequestRepositoryLayer
 
-  const requestLayer = databaseUrl
-    ? makePrismaRequestRepositoryLayer(databaseUrl)
-    : InMemoryRequestRepositoryLayer;
+  const sessionLayer = config.databaseUrl
+    ? makePrismaSessionRepositoryLayer(config.databaseUrl)
+    : InMemorySessionRepositoryLayer
 
-  const sessionLayer = databaseUrl
-    ? makePrismaSessionRepositoryLayer(databaseUrl)
-    : InMemorySessionRepositoryLayer;
+  const roomLayer = makePrismaRoomRepositoryLayer(config.databaseUrl)
+  const authLayer = makeFirebaseAuthProviderLayer(config)
+  const notifierLayer = makeRedisRoomNotifierLayer(config)
 
-  const authLayer = databaseUrl
-    ? makeNeonAuthProviderLayer(databaseUrl)
-    : makeNeonAuthProviderLayer("");
+  return Layer.mergeAll(requestLayer, sessionLayer, roomLayer, authLayer, notifierLayer)
+}
 
-  return Layer.mergeAll(requestLayer, sessionLayer, authLayer);
-};
-
-export type AppServices = Layer.Layer.Success<ReturnType<typeof makeAppLayer>>;
+export type AppServices = Layer.Layer.Success<ReturnType<typeof makeAppLayer>>

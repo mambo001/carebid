@@ -40,7 +40,7 @@ export function RequestRoomPage() {
   return (
     <Stack spacing={3}>
       <Alert severity="info">
-        This room now streams live snapshots from the Durable Object over WebSockets.
+        This room streams live snapshots from the backend over server-sent events.
       </Alert>
 
       <div>

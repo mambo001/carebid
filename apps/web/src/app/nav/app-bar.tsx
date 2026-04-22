@@ -1,7 +1,7 @@
 import { AppBar as MuiAppBar, Box, Button, Stack, Toolbar, Typography } from "@mui/material"
 import { NavLink, useNavigate } from "react-router-dom"
 
-import { authClient } from "../../lib/auth"
+import { signOutUser } from "../../lib/auth"
 import { useAppState } from "../context/app-state"
 import { APP_NAME, primaryNavigation } from "../contants"
 
@@ -11,7 +11,7 @@ export function AppBar() {
   const setNeonUser = useAppState((state) => state.setNeonUser)
 
   const handleSignOut = async () => {
-    await authClient.signOut()
+    await signOutUser()
     setNeonUser(null)
     navigate("/")
   }

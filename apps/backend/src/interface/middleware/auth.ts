@@ -1,40 +1,47 @@
+import type { NextFunction, Request, Response } from "express"
 import { Effect } from "effect"
-import { createMiddleware } from "hono/factory"
 
-import { AuthProvider } from "../../domain/ports/auth-provider"
+import type { AppConfig } from "../../shared/config/runtime-env"
 import { runEffect } from "../../app"
+import { AuthProvider } from "../../domain/ports/auth-provider"
 
-export type AuthEnv = {
-  Bindings: Env
-  Variables: {
-    authUserId: string
-    authEmail: string
-  }
+export type AuthenticatedRequest = Request & {
+  authUserId?: string
+  authEmail?: string
 }
 
-export const authMiddleware = () =>
-  createMiddleware<AuthEnv>(async (c, next) => {
-    const authorization = c.req.header("Authorization")
+const getBearerToken = (request: Request) => {
+  const authorization = request.header("Authorization")
 
-    if (!authorization?.startsWith("Bearer ")) {
-      return c.json({ ok: false, error: "Missing or invalid Authorization header" }, 401)
+  if (authorization?.startsWith("Bearer ")) {
+    return authorization.slice(7)
+  }
+
+  const token = request.query.token
+  return typeof token === "string" ? token : undefined
+}
+
+export const authMiddleware = (config: AppConfig) =>
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const token = getBearerToken(req)
+
+    if (!token) {
+      return res.status(401).json({ ok: false, error: "Missing or invalid Authorization header" })
     }
-
-    const token = authorization.slice(7)
 
     try {
       const authUser = await runEffect(
-        c.env,
+        config,
         Effect.gen(function* () {
           const authProvider = yield* AuthProvider
           return yield* authProvider.validateToken(token)
         }),
       )
 
-      c.set("authUserId", authUser.id)
-      c.set("authEmail", authUser.email)
-      await next()
+      req.authUserId = authUser.id
+      req.authEmail = authUser.email
+      next()
     } catch {
-      return c.json({ ok: false, error: "Invalid or expired session" }, 401)
+      return res.status(401).json({ ok: false, error: "Invalid or expired session" })
     }
-  })
+  }

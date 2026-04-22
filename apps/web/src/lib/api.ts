@@ -13,7 +13,6 @@ import {
   RequestListResponseSchema,
   RequestResolutionResponseSchema,
   RequestSummaryResponseSchema,
-  RoomConnectionResponseSchema,
   RequestRoomSnapshotSchema,
   RoomSnapshotMessageSchema,
   SessionResponseSchema,
@@ -123,12 +122,6 @@ export const api = {
     return decodeJson(RequestRoomSnapshotSchema, response)
   },
 
-  async getRoomConnection(requestId: string) {
-    const response = await authedFetch(`${apiBaseUrl}/api/requests/${requestId}/connect`)
-
-    return decodeJson(RoomConnectionResponseSchema, response)
-  },
-
   async placeBid(requestId: string, input: BidInput) {
     const payload = Schema.decodeUnknownSync(BidInputSchema)(input)
     const response = await authedFetch(`${apiBaseUrl}/api/requests/${requestId}/bids`, {
@@ -200,3 +193,9 @@ export const api = {
 
 export const decodeRoomMessage = (message: string) =>
   Schema.decodeUnknownSync(RoomSnapshotMessageSchema)(JSON.parse(message))
+
+export const createRoomStreamUrl = (requestId: string, token: string) => {
+  const url = new URL(`${apiBaseUrl}/api/requests/${requestId}/stream`)
+  url.searchParams.set("token", token)
+  return url.toString()
+}
