@@ -3,8 +3,13 @@
 .wrangler
 node_modules
 apps/*/node_modules
+packages/*/node_modules
 dist
+apps/*/dist
+packages/*/dist
 coverage
+.turbo
+.DS_Store
 .env
 .env.*
 apps/backend/.dev.vars

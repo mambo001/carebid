@@ -25,7 +25,9 @@ Web example env lives at `apps/web/.env.example`.
 
 Root `.env.example` contains the local infra defaults used by Prisma.
 
-After starting Docker, generate Prisma client and push the schema:
+When running the full stack via `docker compose`, the backend container now syncs the Prisma schema on startup.
+
+If you are running Prisma commands from the host instead, generate Prisma client and push the schema manually:
 
 ```bash
 bun run db:generate

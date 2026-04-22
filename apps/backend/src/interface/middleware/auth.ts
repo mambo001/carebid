@@ -23,6 +23,11 @@ const getBearerToken = (request: Request) => {
 
 export const authMiddleware = (config: AppConfig) =>
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (req.method === "OPTIONS") {
+      next()
+      return
+    }
+
     const token = getBearerToken(req)
 
     if (!token) {

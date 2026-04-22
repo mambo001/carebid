@@ -3,7 +3,7 @@ import {
   connectAuthEmulator,
   createUserWithEmailAndPassword,
   getAuth,
-  onAuthStateChanged,
+  onIdTokenChanged,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -56,6 +56,16 @@ export const setStoredAuthToken = (token: string | null) => {
   window.localStorage.removeItem(authTokenStorageKey)
 }
 
+export const clearAuthSession = async () => {
+  try {
+    await signOut(authClient)
+  } catch {
+    // Ignore sign-out failures and still clear local auth state.
+  }
+
+  setStoredAuthToken(null)
+}
+
 const getStoredAuthToken = (): string | null => {
   if (typeof window === "undefined") {
     return null
@@ -67,9 +77,15 @@ const getStoredAuthToken = (): string | null => {
 export const getCurrentAuthUser = () => mapUser(authClient.currentUser)
 
 export const observeAuthUser = (callback: (user: AuthSession["user"] | null) => void) =>
-  onAuthStateChanged(authClient, async (user) => {
+  onIdTokenChanged(authClient, async (user) => {
     if (user) {
-      setStoredAuthToken(await user.getIdToken())
+      try {
+        setStoredAuthToken(await user.getIdToken())
+      } catch {
+        await clearAuthSession()
+        callback(null)
+        return
+      }
     } else {
       setStoredAuthToken(null)
     }
@@ -91,16 +107,20 @@ export const signUpUser = async (name: string, email: string, password: string) 
 }
 
 export const signOutUser = async () => {
-  await signOut(authClient)
-  setStoredAuthToken(null)
+  await clearAuthSession()
 }
 
 export const getAuthToken = async (): Promise<string | null> => {
   const currentUser = authClient.currentUser
   if (currentUser) {
-    const token = await currentUser.getIdToken()
-    setStoredAuthToken(token)
-    return token
+    try {
+      const token = await currentUser.getIdToken()
+      setStoredAuthToken(token)
+      return token
+    } catch {
+      await clearAuthSession()
+      return null
+    }
   }
 
   return getStoredAuthToken()

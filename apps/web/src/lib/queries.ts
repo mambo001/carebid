@@ -30,10 +30,11 @@ export const useRoomSnapshotQuery = (requestId: string) =>
     enabled: Boolean(requestId),
   })
 
-export const useSessionQuery = () =>
+export const useSessionQuery = (enabled = true) =>
   useQuery({
     queryKey: requestKeys.session,
     queryFn: api.getSession,
+    enabled,
   })
 
 export const useSwitchRoleMutation = () => {

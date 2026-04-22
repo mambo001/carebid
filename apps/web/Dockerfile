@@ -25,8 +25,6 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
-RUN bun install --frozen-lockfile
-
 WORKDIR /app/apps/web
 RUN bun run build
 

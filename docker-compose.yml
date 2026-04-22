@@ -1,4 +1,28 @@
 services:
+  firebase-emulator:
+    build:
+      context: .
+      dockerfile: docker/firebase-emulator.Dockerfile
+    container_name: carebid-firebase-emulator
+    restart: unless-stopped
+    working_dir: /workspace
+    ports:
+      - "4000:4000"
+      - "9099:9099"
+    volumes:
+      - ./:/workspace
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   neon-postgres:
     image: postgres:16-alpine
     container_name: carebid-neon-postgres
@@ -16,6 +40,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    depends_on:
+      firebase-emulator:
+        condition: service_healthy
 
   redis:
     image: redis:7-alpine
@@ -31,30 +58,18 @@ services:
       timeout: 5s
       retries: 10
 
-  firebase-emulator:
-    image: node:20-alpine
-    container_name: carebid-firebase-emulator
-    restart: unless-stopped
-    working_dir: /workspace
-    command: >-
-      sh -c "npm install -g firebase-tools@13.35.1 &&
-      firebase emulators:start --project carebid-local --only auth,ui"
-    ports:
-      - "4000:4000"
-      - "9099:9099"
-    volumes:
-      - ./:/workspace
-      - firebase-tools-cache:/root/.cache
-    depends_on:
-      neon-postgres:
-        condition: service_healthy
-
   backend:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
     container_name: carebid-backend
     restart: unless-stopped
+    command:
+      [
+        "sh",
+        "-c",
+        "bunx prisma db push --schema prisma/schema.prisma --skip-generate && exec bun src/index.ts",
+      ]
     environment:
       NODE_ENV: production
       PORT: 8080
@@ -66,13 +81,24 @@ services:
       FIREBASE_AUTH_EMULATOR_HOST: firebase-emulator:9099
     ports:
       - "8080:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://127.0.0.1:8080/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     depends_on:
       neon-postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       firebase-emulator:
-        condition: service_started
+        condition: service_healthy
 
   web:
     build:
@@ -91,11 +117,10 @@ services:
       - "5173:5173"
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
       firebase-emulator:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   postgres-data:
   redis-data:
-  firebase-tools-cache:

@@ -30,7 +30,7 @@ import type {
   ViewerRole,
 } from "@carebid/shared"
 
-import { getAuthToken, setStoredAuthToken } from "./auth"
+import { clearAuthSession, getAuthToken } from "./auth"
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8787"
 
@@ -44,7 +44,7 @@ const authedFetch = async (url: string, init?: RequestInit): Promise<Response> =
   const response = await fetch(url, { ...init, headers })
 
   if (response.status === 401) {
-    setStoredAuthToken(null)
+    await clearAuthSession()
   }
 
   return response
