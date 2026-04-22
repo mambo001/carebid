@@ -21,7 +21,8 @@
     "infra:logs": "docker compose logs -f",
     "infra:restart": "docker compose restart",
     "infra:seed": "bun run --filter @carebid/backend seed",
-    "infra:ps": "docker compose ps"
+    "infra:ps": "docker compose ps",
+    "docker": "docker compose up --build --force-recreate"
   },
   "dependencies": {
     "@effect/schema": "^0.75.5",
