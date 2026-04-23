@@ -3,7 +3,7 @@ import { Context, Effect } from "effect"
 import type { AcceptBidInput, BidInput, WithdrawBidInput } from "@carebid/shared"
 
 import type { RoomState } from "../entities"
-import { BidNotFoundError, DatabaseError, RequestNotFoundError, RoomNotOpenError } from "../errors"
+import { BidNotFoundError, DatabaseError, RequestNotFoundError, RoomNotOpenError, SessionError } from "../errors"
 
 export interface RoomRepository {
   readonly getRoomState: (
@@ -12,11 +12,11 @@ export interface RoomRepository {
   readonly placeBid: (
     actorAuthUserId: string,
     input: BidInput,
-  ) => Effect.Effect<RoomState, DatabaseError | RequestNotFoundError | RoomNotOpenError>
+  ) => Effect.Effect<RoomState, DatabaseError | RequestNotFoundError | RoomNotOpenError | SessionError>
   readonly withdrawBid: (
     actorAuthUserId: string,
     input: WithdrawBidInput,
-  ) => Effect.Effect<RoomState, DatabaseError | RequestNotFoundError | RoomNotOpenError | BidNotFoundError>
+  ) => Effect.Effect<RoomState, DatabaseError | RequestNotFoundError | RoomNotOpenError | BidNotFoundError | SessionError>
   readonly acceptBid: (
     actorAuthUserId: string,
     input: AcceptBidInput,

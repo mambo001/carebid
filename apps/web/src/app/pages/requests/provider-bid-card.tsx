@@ -16,6 +16,7 @@ import {
   useWithdrawBidMutation,
 } from "../../../lib/queries";
 import { useAppState } from "../../context";
+import { getProviderBidActor } from "./provider-bid-card-state";
 
 const required = (value: unknown) => (value ? undefined : "Required");
 
@@ -23,10 +24,10 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
   const session = useAppState((state) => state.session);
   const placeBid = usePlaceBidMutation(requestId);
   const withdrawBid = useWithdrawBidMutation(requestId);
+  const providerBidActor = getProviderBidActor(session);
 
-  const providerId = session?.providerProfile?.id ?? "demo-provider";
-  const providerDisplayName =
-    session?.providerProfile?.displayName ?? "Demo Provider";
+  const providerId = providerBidActor?.providerId ?? "";
+  const providerDisplayName = providerBidActor?.providerDisplayName ?? "";
 
   const initialValues: BidInput = {
     requestId,
@@ -70,6 +71,12 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
                     <Alert severity="info">Bid withdrawn from the room.</Alert>
                   )}
 
+                  {!providerBidActor && (
+                    <Alert severity="warning">
+                      Create a provider profile before placing bids in the room.
+                    </Alert>
+                  )}
+
                   <TextField
                     name="amount"
                     label="Bid amount"
@@ -91,7 +98,7 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
                     <Button
                       type="submit"
                       variant="contained"
-                      disabled={submitting || placeBid.isPending}
+                      disabled={submitting || placeBid.isPending || !providerBidActor}
                     >
                       {placeBid.isPending
                         ? "Saving bid..."
@@ -100,9 +107,9 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
                     <Button
                       type="button"
                       variant="outlined"
-                      disabled={withdrawBid.isPending}
+                      disabled={withdrawBid.isPending || !providerBidActor}
                       onClick={() =>
-                        withdrawBid.mutate({ requestId, providerId })
+                        providerBidActor && withdrawBid.mutate({ requestId, providerId })
                       }
                     >
                       {withdrawBid.isPending

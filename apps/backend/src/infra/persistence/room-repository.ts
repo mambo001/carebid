@@ -4,11 +4,16 @@ import { Prisma, PrismaClient } from "@prisma/client"
 import type { AcceptBidInput, BidInput, WithdrawBidInput } from "@carebid/shared"
 
 import { RoomBid, RoomState } from "../../domain/entities"
-import { BidNotFoundError, DatabaseError, RequestNotFoundError, RoomNotOpenError } from "../../domain/errors"
+import { BidNotFoundError, DatabaseError, RequestNotFoundError, RoomNotOpenError, SessionError } from "../../domain/errors"
 import { RoomRepository } from "../../domain/ports/room-repository"
 import { createPrismaClient } from "../../lib/db"
 
 type DbClient = PrismaClient | Prisma.TransactionClient
+
+type ProviderActor = {
+  id: string
+  displayName: string
+}
 
 type RoomRequestRecord = {
   id: string
@@ -29,6 +34,7 @@ const asRoomError = (error: unknown) =>
   error instanceof RequestNotFoundError ||
   error instanceof RoomNotOpenError ||
   error instanceof BidNotFoundError ||
+  error instanceof SessionError ||
   error instanceof DatabaseError
     ? error
     : new DatabaseError({ message: String(error) })
@@ -119,6 +125,25 @@ const insertBidHistory = (
 
 const loadRoomState = (db: DbClient, requestId: string) => loadRoomRequest(db, requestId).then(toRoomState)
 
+export const resolveProviderForActor = async (
+  db: Pick<Prisma.TransactionClient, "provider">,
+  actorAuthUserId: string,
+): Promise<ProviderActor> => {
+  const provider = await db.provider.findUnique({
+    where: { authUserId: actorAuthUserId },
+    select: {
+      id: true,
+      displayName: true,
+    },
+  })
+
+  if (!provider) {
+    throw new SessionError({ message: "Provider profile required before bidding" })
+  }
+
+  return provider
+}
+
 export const makePrismaRoomRepository = (databaseUrl: string): RoomRepository => {
   const prisma = createPrismaClient(databaseUrl)
 
@@ -129,12 +154,13 @@ export const makePrismaRoomRepository = (databaseUrl: string): RoomRepository =>
       query(() =>
         prisma.$transaction(async (tx) => {
           await ensureRequestOpen(tx, input.requestId)
+          const provider = await resolveProviderForActor(tx, actorAuthUserId)
 
           const existing = await tx.bid.findUnique({
             where: {
               careRequestId_providerId: {
                 careRequestId: input.requestId,
-                providerId: input.providerId,
+                providerId: provider.id,
               },
             },
             select: {
@@ -158,7 +184,7 @@ export const makePrismaRoomRepository = (databaseUrl: string): RoomRepository =>
             : await tx.bid.create({
                 data: {
                   careRequestId: input.requestId,
-                  providerId: input.providerId,
+                  providerId: provider.id,
                   amount: input.amount,
                   availableDate: new Date(input.availableDate),
                   notes: input.notes,
@@ -166,12 +192,12 @@ export const makePrismaRoomRepository = (databaseUrl: string): RoomRepository =>
                 },
               })
 
-          await insertBidHistory(tx, {
-            bidId: bid.id,
-            careRequestId: input.requestId,
-            providerId: input.providerId,
-            actorAuthUserId,
-            eventType: existing ? "updated" : "placed",
+            await insertBidHistory(tx, {
+              bidId: bid.id,
+              careRequestId: input.requestId,
+              providerId: provider.id,
+              actorAuthUserId,
+              eventType: existing ? "updated" : "placed",
             oldAmountCents: existing?.amount,
             newAmountCents: input.amount,
             oldAvailableDate: existing?.availableDate,
@@ -186,18 +212,19 @@ export const makePrismaRoomRepository = (databaseUrl: string): RoomRepository =>
       query(() =>
         prisma.$transaction(async (tx) => {
           await ensureRequestOpen(tx, input.requestId)
+          const provider = await resolveProviderForActor(tx, actorAuthUserId)
 
           const existing = await tx.bid.findUnique({
             where: {
               careRequestId_providerId: {
                 careRequestId: input.requestId,
-                providerId: input.providerId,
+                providerId: provider.id,
               },
             },
           })
 
           if (!existing || existing.status !== "active") {
-            throw new BidNotFoundError({ message: `Active bid for provider ${input.providerId} was not found` })
+            throw new BidNotFoundError({ message: `Active bid for provider ${provider.id} was not found` })
           }
 
           await tx.bid.update({
@@ -208,7 +235,7 @@ export const makePrismaRoomRepository = (databaseUrl: string): RoomRepository =>
           await insertBidHistory(tx, {
             bidId: existing.id,
             careRequestId: input.requestId,
-            providerId: input.providerId,
+            providerId: provider.id,
             actorAuthUserId,
             eventType: "withdrawn",
             oldAmountCents: existing.amount,
