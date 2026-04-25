@@ -6,6 +6,7 @@
   "dependencies": {
     "@effect/platform": "^0.96.0",
     "@effect/platform-node": "^0.106.0",
+    "@effect/rpc": "^0.75.0",
     "effect": "^3.21.0",
     "firebase-admin": "^13.4.0",
     "ioredis": "^5.7.0"
