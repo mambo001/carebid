@@ -12,26 +12,17 @@ const sseEncoder = new TextEncoder()
 const toSseChunk = (payload: string) => sseEncoder.encode(`data: ${payload}\n\n`)
 const heartbeatChunk = sseEncoder.encode(": keep-alive\n\n")
 
-// Health check - no auth required
-const healthHandler = Effect.succeed(HttpServerResponse.text("ok"))
+// Helper to get auth token
+const getAuthToken = Effect.gen(function* () {
+  const request = yield* HttpServerRequest.HttpServerRequest
+  const authHeader = request.headers["authorization"]
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return yield* new Unauthorized({ message: "Missing or invalid authorization header" })
+  }
+  return authHeader.slice(7)
+})
 
-// Helper middleware to extract auth token
-const withAuth = <R, E, A>(
-  handler: (identity: { userId: UserId; firebaseUid: string; email: string; roles: ReadonlyArray<"patient" | "provider"> }) => Effect.Effect<A, E, R>
-): Effect.Effect<A, E | Unauthorized, R | AuthProvider | HttpServerRequest.HttpServerRequest> =>
-  Effect.gen(function* () {
-    const request = yield* HttpServerRequest.HttpServerRequest
-    const authHeader = request.headers["authorization"]
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return yield* new Unauthorized({ message: "Missing or invalid authorization header" })
-    }
-    const token = authHeader.slice(7)
-    const authProvider = yield* AuthProvider
-    const identity = yield* authProvider.verifyToken(token)
-    return yield* handler({ ...identity, userId: identity.userId as UserId })
-  })
-
-// Helper to get request ID from URL
+// Get request ID from URL
 const getRequestId = Effect.gen(function* () {
   const request = yield* HttpServerRequest.HttpServerRequest
   const url = new URL(request.url, `http://localhost`)
@@ -39,7 +30,21 @@ const getRequestId = Effect.gen(function* () {
   return parts[3] as RequestId
 })
 
-// List requests
+// Helper middleware to extract auth token
+const withAuth = <R, E, A>(
+  handler: (identity: { userId: UserId; firebaseUid: string; email: string; roles: ReadonlyArray<"patient" | "provider"> }) => Effect.Effect<A, E, R>
+): Effect.Effect<A, E | Unauthorized, R | AuthProvider | HttpServerRequest.HttpServerRequest> =>
+  Effect.gen(function* () {
+    const token = yield* getAuthToken
+    const authProvider = yield* AuthProvider
+    const identity = yield* authProvider.verifyToken(token)
+    return yield* handler({ ...identity, userId: identity.userId as UserId })
+  })
+
+// Handler for GET /health
+const healthHandler = Effect.succeed(HttpServerResponse.text("ok"))
+
+// Handler for GET /api/requests
 const listRequestsHandler = withAuth((identity) =>
   Effect.gen(function* () {
     const requests = yield* CareRequests
@@ -48,7 +53,7 @@ const listRequestsHandler = withAuth((identity) =>
   }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
 )
 
-// Create request
+// Handler for POST /api/requests
 const createRequestHandler = withAuth((identity) =>
   Effect.gen(function* () {
     const commands = yield* RequestCommands
@@ -61,7 +66,7 @@ const createRequestHandler = withAuth((identity) =>
   )
 )
 
-// Open request
+// Handler for POST /api/requests/:id/open
 const openRequestHandler = withAuth((identity) =>
   Effect.gen(function* () {
     const commands = yield* RequestCommands
@@ -71,7 +76,7 @@ const openRequestHandler = withAuth((identity) =>
   }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
 )
 
-// Get room snapshot
+// Handler for GET /api/requests/:id/room
 const getRoomHandler = withAuth(() =>
   Effect.gen(function* () {
     const requests = yield* CareRequests
@@ -81,7 +86,7 @@ const getRoomHandler = withAuth(() =>
   }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
 )
 
-// SSE stream
+// Handler for GET /api/requests/:id/stream
 const streamHandler = withAuth(() =>
   Effect.gen(function* () {
     const requestId = yield* getRequestId
@@ -105,7 +110,7 @@ const streamHandler = withAuth(() =>
   })
 )
 
-// Place bid
+// Handler for POST /api/requests/:id/bids
 const placeBidHandler = withAuth((identity) =>
   Effect.gen(function* () {
     const commands = yield* RequestCommands
