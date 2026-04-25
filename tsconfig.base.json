@@ -13,6 +13,10 @@
     "isolatedModules": true,
     "noEmit": true,
     "allowSyntheticDefaultImports": true,
-    "types": []
+    "types": [],
+    "paths": {
+      "@carebid/shared": ["./packages/shared/src/index.ts"],
+      "@carebid/api": ["./packages/api/src/index.ts"]
+    }
   }
 }
