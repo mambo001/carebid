@@ -20,9 +20,12 @@ services:
       dockerfile: apps/web/Dockerfile
       cache_from:
         - carebid-web:latest
+    ports:
+      - "5173:5173"
     volumes:
       - ./apps/web/src:/app/apps/web/src:ro
       - ./packages:/app/packages:ro
-    command: ["npm", "run", "dev"]
+      - /app/apps/web/node_modules
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
     environment:
       - VITE_DEV_HOST=0.0.0.0
