@@ -1,4 +1,4 @@
-FROM oven/bun:1.2.21 AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -16,19 +16,19 @@ ENV VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
 ENV VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
 ENV VITE_FIREBASE_AUTH_EMULATOR_URL=${VITE_FIREBASE_AUTH_EMULATOR_URL}
 
-COPY package.json bun.lock bunfig.toml tsconfig.base.json ./
+COPY package.json tsconfig.base.json ./
 COPY apps/backend/package.json apps/backend/package.json
 COPY apps/web/package.json apps/web/package.json
-COPY packages/shared/package.json packages/shared/package.json
+COPY packages/api/package.json packages/api/package.json
 
-RUN bun install --frozen-lockfile
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
 WORKDIR /app/apps/web
-RUN bun run build
+RUN npm run build
 
-FROM oven/bun:1.2.21 AS runner
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
@@ -41,4 +41,4 @@ WORKDIR /app/apps/web
 
 EXPOSE 5173
 
-CMD ["bunx", "vite", "preview", "--host", "0.0.0.0", "--port", "5173"]
+CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "5173"]
