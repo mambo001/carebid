@@ -10,7 +10,20 @@ import { Unauthorized } from "./data/errors"
 import { authenticateRequest } from "./integration/auth"
 import { parseRequestIdFromPath } from "./integration/path"
 
-// CORS middleware - handles preflight and adds headers to all responses
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+}
+
+const withCorsHeaders = (response: HttpServerResponse.HttpServerResponse) =>
+  response.pipe(
+    HttpServerResponse.setHeader("Access-Control-Allow-Origin", corsHeaders["Access-Control-Allow-Origin"]),
+    HttpServerResponse.setHeader("Access-Control-Allow-Methods", corsHeaders["Access-Control-Allow-Methods"]),
+    HttpServerResponse.setHeader("Access-Control-Allow-Headers", corsHeaders["Access-Control-Allow-Headers"])
+  )
+
+// CORS middleware - handles preflight and adds headers to all responses, including failures.
 const corsMiddleware = <R, E>(
   httpApp: Effect.Effect<HttpServerResponse.HttpServerResponse, E, R>
 ): Effect.Effect<HttpServerResponse.HttpServerResponse, E, R> =>
@@ -22,23 +35,29 @@ const corsMiddleware = <R, E>(
       return HttpServerResponse.text("", {
         status: 204,
         headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          ...corsHeaders,
           "Access-Control-Max-Age": "86400",
         },
       })
     }
 
-    // For non-OPTIONS requests, run the app and add CORS headers
-    const response = yield* httpApp
-    
-    // Add CORS headers to all successful responses
-    return response.pipe(
-      HttpServerResponse.setHeader("Access-Control-Allow-Origin", "*"),
-      HttpServerResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"),
-      HttpServerResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    // For non-OPTIONS requests, run the app and add CORS headers. If the app
+    // fails before producing a response, convert the known auth failure into a
+    // response here so browsers can read the status instead of reporting CORS.
+    const response = yield* httpApp.pipe(
+      Effect.catchAll((error) => {
+        const status = typeof error === "object" && error !== null && "_tag" in error && error._tag === "Unauthorized"
+          ? 401
+          : 500
+
+        return HttpServerResponse.json(
+          { error: status === 401 ? "Unauthorized" : "Internal Server Error" },
+          { status }
+        )
+      })
     )
+    
+    return withCorsHeaders(response)
   })
 
 const sseEncoder = new TextEncoder()
@@ -69,11 +88,34 @@ const healthHandler = Effect.succeed(HttpServerResponse.text("ok"))
 const getSessionHandler = withAuth((identity) =>
   Effect.gen(function* () {
     return {
+      ok: true,
       session: {
-        userId: identity.userId,
+        mode: "authenticated" as const,
+        authUserId: identity.firebaseUid,
         email: identity.email,
-        roles: identity.roles,
-        role: identity.roles[0] ?? "patient"
+        role: identity.roles[0] ?? "patient",
+      }
+    }
+  }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
+)
+
+const SwitchRoleBodySchema = Schema.Struct({
+  role: Schema.optional(Schema.Literal("patient", "provider")),
+})
+
+// Handler for POST /api/session/role
+const switchRoleHandler = withAuth((identity) =>
+  Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest
+    const json = yield* request.json
+    const body = yield* Schema.decodeUnknown(SwitchRoleBodySchema)(json)
+    return {
+      ok: true,
+      session: {
+        mode: "authenticated" as const,
+        authUserId: identity.firebaseUid,
+        email: identity.email,
+        role: body.role ?? identity.roles[0] ?? "patient",
       }
     }
   }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
@@ -209,6 +251,7 @@ const acceptBidHandler = withAuth((identity) =>
 const apiRouter = HttpRouter.empty.pipe(
   HttpRouter.get("/health", healthHandler),
   HttpRouter.get("/api/session", getSessionHandler),
+  HttpRouter.post("/api/session/role", switchRoleHandler),
   HttpRouter.get("/api/requests", listRequestsHandler),
   HttpRouter.get("/api/requests/open", listOpenRequestsHandler),
   HttpRouter.post("/api/requests", createRequestHandler),

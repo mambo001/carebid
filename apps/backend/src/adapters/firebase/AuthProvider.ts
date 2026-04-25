@@ -12,15 +12,12 @@ export const make = Effect.gen(function* () {
     Effect.option
   )
 
-  // Initialize Firebase Admin
-  // Production: Uses Application Default Credentials (ADC)
-  // - Cloud Run service account
-  // - GOOGLE_APPLICATION_CREDENTIALS env var
-  // - gcloud auth application-default login
-  const app = initializeApp({
-    credential: applicationDefault(),
-    projectId,
-  })
+  // Development uses the Firebase Auth Emulator. In that mode the Admin SDK
+  // must not require ADC; FIREBASE_AUTH_EMULATOR_HOST tells it where to verify.
+  // Production uses Application Default Credentials from the runtime service account.
+  const app = emulatorHost._tag === "Some"
+    ? initializeApp({ projectId })
+    : initializeApp({ credential: applicationDefault(), projectId })
   const auth = getAuth(app)
 
   const verifyToken = (token: string) => {
