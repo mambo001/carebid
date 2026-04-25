@@ -1,15 +1,16 @@
 import { HttpBody, HttpRouter, HttpServerResponse, HttpServerRequest, HttpMiddleware } from "@effect/platform"
-import { Effect, Queue, Stream, Schedule, Schema, Option } from "effect"
+import { Effect, Queue, Stream, Schedule, Schema } from "effect"
 
 import { AuthProvider } from "./ports/AuthProvider"
 import { CareRequests } from "./ports/CareRequests"
 import { RequestCommands } from "./ports/RequestCommands"
 import { SseRegistry } from "./ports/SseRegistry"
 import { RequestId, Money, UserId, BidId } from "./data/branded"
-import { Bid, CareRequest } from "./data/entities"
 import { Unauthorized } from "./data/errors"
 import { authenticateRequest } from "./integration/auth"
 import { parseRequestIdFromPath } from "./integration/path"
+export { serializeBid, serializeCareRequest } from "./integration/serialization"
+import { serializeBid, serializeCareRequest } from "./integration/serialization"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,40 +69,6 @@ const corsMiddleware = <R, E>(
 const sseEncoder = new TextEncoder()
 const toSseChunk = (payload: string) => sseEncoder.encode(`data: ${payload}\n\n`)
 const heartbeatChunk = sseEncoder.encode(": keep-alive\n\n")
-
-export const serializeBid = (bid: Bid) => ({
-  id: bid.id,
-  requestId: bid.requestId,
-  providerId: bid.providerId,
-  providerDisplayName: bid.providerDisplayName,
-  amount: bid.amount,
-  availableDate: bid.availableDate.toISOString(),
-  notes: Option.getOrNull(bid.notes),
-  status: bid.status,
-  createdAt: bid.createdAt.toISOString(),
-})
-
-export const serializeCareRequest = (request: CareRequest) => {
-  switch (request._tag) {
-    case "DraftRequest":
-      return {
-        ...request,
-        createdAt: request.createdAt.toISOString(),
-      }
-    case "OpenRequest":
-      return {
-        ...request,
-        bids: request.bids.map(serializeBid),
-        openedAt: request.openedAt.toISOString(),
-      }
-    case "AwardedRequest":
-      return {
-        ...request,
-        bids: request.bids.map(serializeBid),
-        awardedAt: request.awardedAt.toISOString(),
-      }
-  }
-}
 
 // Authenticate middleware - extracts and verifies auth token
 const withAuth = <R, E, A>(

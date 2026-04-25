@@ -8,7 +8,8 @@ import { router } from "../program"
 import * as CareRequestsAdapter from "../adapters/prisma/CareRequests"
 import * as BidsAdapter from "../adapters/prisma/Bids"
 import * as UsersAdapter from "../adapters/in-memory/Users"
-import * as RoomNotifierAdapter from "../adapters/in-memory/RoomNotifier"
+import * as RoomNotifierAdapter from "../adapters/redis/RoomNotifier"
+import * as RoomSubscriberAdapter from "../adapters/redis/RoomSubscriber"
 import * as SseRegistryAdapter from "../adapters/in-memory/SseRegistry"
 import * as RequestCommandsAdapter from "../adapters/in-memory/RequestCommands"
 import * as FirebaseAuthAdapter from "../adapters/firebase/AuthProvider"
@@ -32,6 +33,10 @@ const BaseLayers = Layer.mergeAll(
   AuthProviderLive
 )
 
+const RoomSubscriberLive = RoomSubscriberAdapter.layer.pipe(
+  Layer.provide(BaseLayers)
+)
+
 // RequestCommands depends on base layers
 const RequestCommandsLive = RequestCommandsAdapter.layer.pipe(
   Layer.provide(BaseLayers)
@@ -40,6 +45,7 @@ const RequestCommandsLive = RequestCommandsAdapter.layer.pipe(
 // All service layers combined
 const AllServices = Layer.mergeAll(
   BaseLayers,
+  RoomSubscriberLive,
   RequestCommandsLive
 )
 

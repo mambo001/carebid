@@ -1,5 +1,6 @@
 import { Layer } from "effect"
 import * as RoomNotifier from "../adapters/redis/RoomNotifier"
+import * as RoomSubscriber from "../adapters/redis/RoomSubscriber"
 import * as SseRegistry from "../adapters/in-memory/SseRegistry"
 import * as AuthProvider from "../adapters/firebase/AuthProvider"
 import * as CareRequests from "../adapters/prisma/CareRequests"
@@ -22,6 +23,10 @@ const BaseLayers = Layer.mergeAll(
   AuthProviderLive
 )
 
+const RoomSubscriberLive = RoomSubscriber.layer.pipe(
+  Layer.provide(BaseLayers)
+)
+
 // RequestCommands depends on base layers
 const RequestCommandsLive = RequestCommands.layer.pipe(
   Layer.provide(BaseLayers)
@@ -30,5 +35,6 @@ const RequestCommandsLive = RequestCommands.layer.pipe(
 // All service layers combined
 export const AppLayer = Layer.mergeAll(
   BaseLayers,
+  RoomSubscriberLive,
   RequestCommandsLive
 )
