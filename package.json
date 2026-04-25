@@ -21,7 +21,9 @@
     "infra:restart": "docker compose restart",
     "infra:seed": "bun run --filter @carebid/backend seed",
     "infra:ps": "docker compose ps",
-    "docker": "docker compose up --build --force-recreate"
+    "docker": "docker compose up --build",
+    "docker:prod": "docker compose up --build --force-recreate",
+    "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up"
   },
   "dependencies": {
     "@effect/cluster": "^0.58.2",

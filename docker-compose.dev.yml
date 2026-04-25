@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    volumes:
+      - ./apps/backend/src:/app/apps/backend/src:ro
+      - ./apps/backend/prisma:/app/apps/backend/prisma:ro
+      - ./packages:/app/packages:ro
+      - node_modules:/app/node_modules
+    command: ["npx", "tsx", "watch", "src/main.ts"]
+    environment:
+      - NODE_ENV=development
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    volumes:
+      - ./apps/web/src:/app/apps/web/src:ro
+      - ./packages:/app/packages:ro
+      - node_modules:/app/node_modules
+    command: ["npm", "run", "dev"]
+
+volumes:
+  node_modules:
