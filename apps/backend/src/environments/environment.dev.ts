@@ -5,8 +5,8 @@ import { createServer } from "http"
 
 import { router } from "../program"
 
-import * as CareRequestsAdapter from "../adapters/in-memory/CareRequests"
-import * as BidsAdapter from "../adapters/in-memory/Bids"
+import * as CareRequestsAdapter from "../adapters/prisma/CareRequests"
+import * as BidsAdapter from "../adapters/prisma/Bids"
 import * as UsersAdapter from "../adapters/in-memory/Users"
 import * as RoomNotifierAdapter from "../adapters/in-memory/RoomNotifier"
 import * as SseRegistryAdapter from "../adapters/in-memory/SseRegistry"
