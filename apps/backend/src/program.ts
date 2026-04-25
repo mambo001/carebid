@@ -62,6 +62,20 @@ const getRequestId = Effect.gen(function* () {
 // Handler for GET /health
 const healthHandler = Effect.succeed(HttpServerResponse.text("ok"))
 
+// Handler for GET /api/session
+const getSessionHandler = withAuth((identity) =>
+  Effect.gen(function* () {
+    return {
+      session: {
+        userId: identity.userId,
+        email: identity.email,
+        roles: identity.roles,
+        role: identity.roles[0] ?? "patient"
+      }
+    }
+  }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
+)
+
 // Handler for GET /api/requests
 const listRequestsHandler = withAuth((identity) =>
   Effect.gen(function* () {
@@ -191,6 +205,7 @@ const acceptBidHandler = withAuth((identity) =>
 // Build router
 const apiRouter = HttpRouter.empty.pipe(
   HttpRouter.get("/health", healthHandler),
+  HttpRouter.get("/api/session", getSessionHandler),
   HttpRouter.get("/api/requests", listRequestsHandler),
   HttpRouter.get("/api/requests/open", listOpenRequestsHandler),
   HttpRouter.post("/api/requests", createRequestHandler),
