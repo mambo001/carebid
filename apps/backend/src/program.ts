@@ -10,15 +10,14 @@ import { Unauthorized } from "./data/errors"
 import { authenticateRequest } from "./integration/auth"
 import { parseRequestIdFromPath } from "./integration/path"
 
-// CORS middleware
+// CORS middleware - handles preflight and adds headers to all responses
 const corsMiddleware = <R, E>(
   httpApp: Effect.Effect<HttpServerResponse.HttpServerResponse, E, R>
 ): Effect.Effect<HttpServerResponse.HttpServerResponse, E, R> =>
   Effect.gen(function* () {
     const request = yield* HttpServerRequest.HttpServerRequest
-    const response = yield* httpApp
-
-    // Handle preflight requests
+    
+    // Handle preflight OPTIONS requests FIRST - before routing
     if (request.method === "OPTIONS") {
       return HttpServerResponse.text("", {
         status: 204,
@@ -26,11 +25,15 @@ const corsMiddleware = <R, E>(
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Max-Age": "86400",
         },
       })
     }
 
-    // Add CORS headers to all responses
+    // For non-OPTIONS requests, run the app and add CORS headers
+    const response = yield* httpApp
+    
+    // Add CORS headers to all successful responses
     return response.pipe(
       HttpServerResponse.setHeader("Access-Control-Allow-Origin", "*"),
       HttpServerResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"),
