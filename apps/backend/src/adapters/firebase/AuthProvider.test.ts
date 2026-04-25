@@ -30,5 +30,10 @@ describe("profileRowsFromIdentity", () => {
       providerId: "firebase-user-1",
       category: "imaging",
     })
+    expect(rows.user).toEqual({
+      id: "firebase-user-1",
+      displayName: "clinician",
+      roles: ["patient", "provider"],
+    })
   })
 })

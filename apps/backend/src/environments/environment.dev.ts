@@ -17,14 +17,19 @@ const port = process.env.PORT ? parseInt(process.env.PORT) : 3000
 
 const NodeServerLive = NodeHttpServer.layer(() => createServer(), { port, host: "0.0.0.0" })
 
-// Base layers have no dependencies
+const UsersLive = UsersAdapter.layer
+const AuthProviderLive = FirebaseAuthAdapter.layer.pipe(
+  Layer.provide(UsersLive)
+)
+
+// Base layers have no dependencies after auth receives the shared Users layer.
 const BaseLayers = Layer.mergeAll(
   CareRequestsAdapter.layer,
   BidsAdapter.layer,
-  UsersAdapter.layer,
+  UsersLive,
   RoomNotifierAdapter.layer,
   SseRegistryAdapter.layer,
-  FirebaseAuthAdapter.layer
+  AuthProviderLive
 )
 
 // RequestCommands depends on base layers

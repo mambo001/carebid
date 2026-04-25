@@ -4,6 +4,8 @@ import { getAuth } from "firebase-admin/auth"
 import { AuthProvider, AuthIdentity } from "../../ports/AuthProvider"
 import { Unauthorized } from "../../data/errors"
 import { UserId } from "../../data/branded"
+import { User } from "../../data/entities"
+import { Users } from "../../ports/Users"
 import { Schema } from "effect"
 import { makePrismaClient } from "../prisma/lib/prisma-client"
 
@@ -39,6 +41,11 @@ export const profileRowsFromIdentity = (identity: ProfileIdentity) => {
       providerId: identity.userId,
       category: "imaging" as const,
     },
+    user: {
+      id: identity.userId,
+      displayName,
+      roles: ["patient", "provider"] as const,
+    },
   }
 }
 
@@ -48,6 +55,7 @@ export const make = Effect.gen(function* () {
     Effect.option
   )
   const prisma = yield* makePrismaClient
+  const users = yield* Users
 
   // Development uses the Firebase Auth Emulator. In that mode the Admin SDK
   // must not require ADC; FIREBASE_AUTH_EMULATOR_HOST tells it where to verify.
@@ -85,6 +93,14 @@ export const make = Effect.gen(function* () {
           create: rows.providerCategory,
           update: {},
         })
+        await Effect.runPromise(
+          users.save(new User({
+            ...rows.user,
+            id: Schema.decodeUnknownSync(UserId)(rows.user.id),
+            roles: ["patient", "provider"],
+            createdAt: new Date(),
+          }))
+        )
       },
       catch: (error) => error,
     }).pipe(Effect.orDie)

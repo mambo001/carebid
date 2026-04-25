@@ -1,11 +1,12 @@
 import { HttpBody, HttpRouter, HttpServerResponse, HttpServerRequest, HttpMiddleware } from "@effect/platform"
-import { Effect, Queue, Stream, Schedule, Schema } from "effect"
+import { Effect, Queue, Stream, Schedule, Schema, Option } from "effect"
 
 import { AuthProvider } from "./ports/AuthProvider"
 import { CareRequests } from "./ports/CareRequests"
 import { RequestCommands } from "./ports/RequestCommands"
 import { SseRegistry } from "./ports/SseRegistry"
 import { RequestId, Money, UserId, BidId } from "./data/branded"
+import { Bid, CareRequest } from "./data/entities"
 import { Unauthorized } from "./data/errors"
 import { authenticateRequest } from "./integration/auth"
 import { parseRequestIdFromPath } from "./integration/path"
@@ -68,13 +69,47 @@ const sseEncoder = new TextEncoder()
 const toSseChunk = (payload: string) => sseEncoder.encode(`data: ${payload}\n\n`)
 const heartbeatChunk = sseEncoder.encode(": keep-alive\n\n")
 
+export const serializeBid = (bid: Bid) => ({
+  id: bid.id,
+  requestId: bid.requestId,
+  providerId: bid.providerId,
+  providerDisplayName: bid.providerDisplayName,
+  amount: bid.amount,
+  availableDate: bid.availableDate.toISOString(),
+  notes: Option.getOrNull(bid.notes),
+  status: bid.status,
+  createdAt: bid.createdAt.toISOString(),
+})
+
+export const serializeCareRequest = (request: CareRequest) => {
+  switch (request._tag) {
+    case "DraftRequest":
+      return {
+        ...request,
+        createdAt: request.createdAt.toISOString(),
+      }
+    case "OpenRequest":
+      return {
+        ...request,
+        bids: request.bids.map(serializeBid),
+        openedAt: request.openedAt.toISOString(),
+      }
+    case "AwardedRequest":
+      return {
+        ...request,
+        bids: request.bids.map(serializeBid),
+        awardedAt: request.awardedAt.toISOString(),
+      }
+  }
+}
+
 // Authenticate middleware - extracts and verifies auth token
 const withAuth = <R, E, A>(
   handler: (identity: { userId: UserId; firebaseUid: string; email: string; roles: ReadonlyArray<"patient" | "provider"> }) => Effect.Effect<A, E, R>
 ): Effect.Effect<A, E | Unauthorized, R | AuthProvider | HttpServerRequest.HttpServerRequest> =>
   Effect.gen(function* () {
     const request = yield* HttpServerRequest.HttpServerRequest
-    const identity = yield* authenticateRequest(request.headers["authorization"])
+    const identity = yield* authenticateRequest(request.headers["authorization"], request.url)
     return yield* handler({ ...identity, userId: identity.userId as UserId })
   })
 
@@ -130,7 +165,7 @@ const listRequestsHandler = withAuth((identity) =>
   Effect.gen(function* () {
     const requests = yield* CareRequests
     const items = yield* requests.findByPatient(identity.userId)
-    return { items }
+    return { items: items.map(serializeCareRequest) }
   }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
 )
 
@@ -149,7 +184,7 @@ const createRequestHandler = withAuth((identity) =>
     const json = yield* request.json
     const body = yield* Schema.decodeUnknown(CreateRequestBodySchema)(json)
     const created = yield* commands.create(body, identity.userId)
-    return { request: created }
+    return { request: serializeCareRequest(created) }
   }).pipe(
     Effect.flatMap((data) => HttpServerResponse.json(data, { status: 201 }))
   )
@@ -161,7 +196,7 @@ const openRequestHandler = withAuth((identity) =>
     const commands = yield* RequestCommands
     const requestId = yield* getRequestId
     const opened = yield* commands.open(requestId, identity.userId)
-    return { request: opened }
+    return { request: serializeCareRequest(opened) }
   }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
 )
 
@@ -171,7 +206,7 @@ const getRoomHandler = withAuth(() =>
     const requests = yield* CareRequests
     const requestId = yield* getRequestId
     const request = yield* requests.findById(requestId)
-    return { request }
+    return { request: serializeCareRequest(request) }
   }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
 )
 
@@ -220,7 +255,7 @@ const placeBidHandler = withAuth((identity) =>
       availableDate: new Date(body.availableDate),
       notes: body.notes,
     }, identity.userId)
-    return { bid }
+    return { bid: serializeBid(bid) }
   }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
 )
 
@@ -229,7 +264,7 @@ const listOpenRequestsHandler = withAuth(() =>
   Effect.gen(function* () {
     const requests = yield* CareRequests
     const items = yield* requests.findOpen()
-    return { items }
+    return { items: items.map(serializeCareRequest) }
   }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
 )
 
@@ -247,7 +282,7 @@ const acceptBidHandler = withAuth((identity) =>
     const body = yield* Schema.decodeUnknown(AcceptBidBodySchema)(json)
     const requestId = yield* getRequestId
     const updated = yield* commands.acceptBid(requestId, body.bidId as BidId, identity.userId)
-    return { request: updated }
+    return { request: serializeCareRequest(updated) }
   }).pipe(Effect.flatMap((data) => HttpServerResponse.json(data)))
 )
 

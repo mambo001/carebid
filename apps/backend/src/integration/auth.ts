@@ -10,6 +10,15 @@ export const extractBearerToken = (authHeader: string | undefined): string | nul
   return authHeader.slice(7)
 }
 
+export const extractQueryToken = (requestUrl: string | undefined): string | null => {
+  if (!requestUrl) {
+    return null
+  }
+
+  const url = new URL(requestUrl, "http://localhost")
+  return url.searchParams.get("token")
+}
+
 export const verifyAuthToken = (
   token: string
 ): Effect.Effect<AuthIdentity, Unauthorized, AuthProvider> =>
@@ -19,9 +28,10 @@ export const verifyAuthToken = (
   })
 
 export const authenticateRequest = (
-  authHeader: string | undefined
+  authHeader: string | undefined,
+  requestUrl?: string
 ): Effect.Effect<AuthIdentity, Unauthorized, AuthProvider> => {
-  const token = extractBearerToken(authHeader)
+  const token = extractBearerToken(authHeader) ?? extractQueryToken(requestUrl)
   if (!token) {
     return new Unauthorized({ message: "Missing or invalid authorization header" })
   }

@@ -7,14 +7,19 @@ import * as Bids from "../adapters/prisma/Bids"
 import * as Users from "../adapters/in-memory/Users"
 import * as RequestCommands from "../adapters/in-memory/RequestCommands"
 
-// Base layers have no dependencies
+const UsersLive = Users.layer
+const AuthProviderLive = AuthProvider.layer.pipe(
+  Layer.provide(UsersLive)
+)
+
+// Base layers have no dependencies after auth receives the shared Users layer.
 const BaseLayers = Layer.mergeAll(
   CareRequests.layer,
   Bids.layer,
-  Users.layer,
+  UsersLive,
   RoomNotifier.layer,
   SseRegistry.layer,
-  AuthProvider.layer
+  AuthProviderLive
 )
 
 // RequestCommands depends on base layers

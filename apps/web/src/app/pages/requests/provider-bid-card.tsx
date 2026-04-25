@@ -21,7 +21,7 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
 
   const initialValues: BidInput = {
     requestId,
-    amount: 1200000,
+    amount: 120000,
     availableDate: "2026-04-25",
     notes: "Open slot available this week.",
   };
