@@ -5,7 +5,7 @@ import { AuthProvider } from "./ports/AuthProvider"
 import { CareRequests } from "./ports/CareRequests"
 import { RequestCommands } from "./ports/RequestCommands"
 import { SseRegistry } from "./ports/SseRegistry"
-import { RequestId } from "./data/branded"
+import { RequestId, Money } from "./data/branded"
 import { Unauthorized } from "./data/errors"
 
 const sseEncoder = new TextEncoder()
@@ -33,76 +33,90 @@ const getRequestIdFromPath = Effect.gen(function* () {
   return id as RequestId
 })
 
+// Handler for GET /health
+const healthHandler = Effect.succeed(HttpServerResponse.text("ok"))
+
+// Handler for GET /api/requests
+const listRequestsHandler = Effect.gen(function* () {
+  const identity = yield* authenticate
+  const requests = yield* CareRequests
+  const items = yield* requests.findByPatient(identity.userId)
+  return HttpServerResponse.json({ items })
+})
+
+// Handler for POST /api/requests
+const createRequestHandler = Effect.gen(function* () {
+  const identity = yield* authenticate
+  const commands = yield* RequestCommands
+  const request = yield* HttpServerRequest.HttpServerRequest
+  const body = yield* request.json as Effect.Effect<{ title: string; description: string; category: string }>
+  const created = yield* commands.create(body, identity.userId)
+  return HttpServerResponse.json({ request: created }, { status: 201 })
+})
+
+// Handler for POST /api/requests/:id/open
+const openRequestHandler = Effect.gen(function* () {
+  const identity = yield* authenticate
+  const commands = yield* RequestCommands
+  const requestId = yield* getRequestIdFromPath
+  const opened = yield* commands.open(requestId, identity.userId)
+  return HttpServerResponse.json({ request: opened })
+})
+
+// Handler for GET /api/requests/:id/room
+const getRoomHandler = Effect.gen(function* () {
+  yield* authenticate
+  const requests = yield* CareRequests
+  const requestId = yield* getRequestIdFromPath
+  const request = yield* requests.findById(requestId)
+  return HttpServerResponse.json({ request })
+})
+
+// Handler for GET /api/requests/:id/stream
+const streamHandler = Effect.gen(function* () {
+  yield* authenticate
+  const requestId = yield* getRequestIdFromPath
+  const registry = yield* SseRegistry
+  const queue = yield* Queue.unbounded<string>()
+  const release = yield* registry.add(requestId, queue)
+
+  const updates = Stream.fromQueue(queue).pipe(Stream.map(toSseChunk))
+  const heartbeat = Stream.repeatValue(heartbeatChunk).pipe(
+    Stream.schedule(Schedule.spaced("25 seconds"))
+  )
+  const body = Stream.concat(
+    Stream.make(toSseChunk(JSON.stringify({ type: "connected" }))),
+    Stream.merge(updates, heartbeat)
+  ).pipe(Stream.ensuring(release))
+
+  return HttpServerResponse.stream(body, {
+    contentType: "text/event-stream",
+    headers: { "cache-control": "no-cache" },
+  })
+})
+
+// Handler for POST /api/requests/:id/bids
+const placeBidHandler = Effect.gen(function* () {
+  const identity = yield* authenticate
+  const commands = yield* RequestCommands
+  const request = yield* HttpServerRequest.HttpServerRequest
+  const body = yield* request.json as Effect.Effect<{ requestId: string; amount: number; availableDate: string; notes: string | null }>
+  const amount = Schema.decodeUnknownSync(Money)(body.amount)
+  const bid = yield* commands.placeBid({
+    requestId: body.requestId as RequestId,
+    amount: amount,
+    availableDate: new Date(body.availableDate),
+    notes: body.notes,
+  }, identity.userId)
+  return HttpServerResponse.json({ bid })
+})
+
 export const router = HttpRouter.empty.pipe(
-  // Health check
-  HttpRouter.get("/health", Effect.succeed(HttpServerResponse.text("ok"))),
-
-  // List requests
-  HttpRouter.get("/api/requests", Effect.gen(function* () {
-    const identity = yield* authenticate
-    const requests = yield* CareRequests
-    const items = yield* requests.findByPatient(identity.userId)
-    return HttpServerResponse.json({ items })
-  })),
-
-  // Create request
-  HttpRouter.post("/api/requests", Effect.gen(function* () {
-    const identity = yield* authenticate
-    const commands = yield* RequestCommands
-    const request = yield* HttpServerRequest.HttpServerRequest
-    const body = yield* request.json as Effect.Effect<{ title: string; description: string; category: string }>
-    const created = yield* commands.create(body, identity.userId)
-    return HttpServerResponse.json({ request: created }, { status: 201 })
-  })),
-
-  // Open request
-  HttpRouter.post("/api/requests/:id/open", Effect.gen(function* () {
-    const identity = yield* authenticate
-    const commands = yield* RequestCommands
-    const requestId = yield* getRequestIdFromPath
-    const opened = yield* commands.open(requestId, identity.userId)
-    return HttpServerResponse.json({ request: opened })
-  })),
-
-  // Get room snapshot
-  HttpRouter.get("/api/requests/:id/room", Effect.gen(function* () {
-    yield* authenticate
-    const requests = yield* CareRequests
-    const requestId = yield* getRequestIdFromPath
-    const request = yield* requests.findById(requestId)
-    return HttpServerResponse.json({ request })
-  })),
-
-  // SSE stream
-  HttpRouter.get("/api/requests/:id/stream", Effect.gen(function* () {
-    yield* authenticate
-    const requestId = yield* getRequestIdFromPath
-    const registry = yield* SseRegistry
-    const queue = yield* Queue.unbounded<string>()
-    const release = yield* registry.add(requestId, queue)
-
-    const updates = Stream.fromQueue(queue).pipe(Stream.map(toSseChunk))
-    const heartbeat = Stream.repeatValue(heartbeatChunk).pipe(
-      Stream.schedule(Schedule.spaced("25 seconds"))
-    )
-    const body = Stream.concat(
-      Stream.make(toSseChunk(JSON.stringify({ type: "connected" }))),
-      Stream.merge(updates, heartbeat)
-    ).pipe(Stream.ensuring(release))
-
-    return HttpServerResponse.stream(body, {
-      contentType: "text/event-stream",
-      headers: { "cache-control": "no-cache" },
-    })
-  })),
-
-  // Place bid
-  HttpRouter.post("/api/requests/:id/bids", Effect.gen(function* () {
-    const identity = yield* authenticate
-    const commands = yield* RequestCommands
-    const request = yield* HttpServerRequest.HttpServerRequest
-    const body = yield* request.json as Effect.Effect<{ requestId: string; amount: number; availableDate: string; notes: string | null }>
-    const bid = yield* commands.placeBid(body as any, identity.userId)
-    return HttpServerResponse.json({ bid })
-  }))
+  HttpRouter.get("/health", healthHandler),
+  HttpRouter.get("/api/requests", listRequestsHandler),
+  HttpRouter.post("/api/requests", createRequestHandler),
+  HttpRouter.post("/api/requests/:id/open", openRequestHandler),
+  HttpRouter.get("/api/requests/:id/room", getRoomHandler),
+  HttpRouter.get("/api/requests/:id/stream", streamHandler),
+  HttpRouter.post("/api/requests/:id/bids", placeBidHandler)
 )

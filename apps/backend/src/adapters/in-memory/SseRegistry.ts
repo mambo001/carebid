@@ -41,7 +41,7 @@ export const make = Effect.gen(function* () {
 
   const broadcast = (requestId: RequestId, message: string) =>
     Ref.get(store).pipe(
-      Effect.map((map) => map.get(requestId) ?? new Set()),
+      Effect.map((map) => map.get(requestId) ?? new Set<Queue.Queue<string>>()),
       Effect.flatMap((queues) =>
         Effect.forEach(queues, (q) => Queue.offer(q, message), { discard: true })
       )

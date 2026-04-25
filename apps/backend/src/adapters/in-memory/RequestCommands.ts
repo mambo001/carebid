@@ -8,6 +8,7 @@ import { DraftRequest, OpenRequest, AwardedRequest, Bid } from "../../data/entit
 import { RequestNotFound, NotRequestOwner, RequestNotOpen, BidNotFound } from "../../data/errors"
 import { RequestId, BidId, UserId, Money } from "../../data/branded"
 import { Schema } from "effect"
+import { Option } from "effect"
 
 export const make = Effect.gen(function* () {
   const requests = yield* CareRequests
@@ -29,7 +30,7 @@ export const make = Effect.gen(function* () {
       return request
     })
 
-  const open = (requestId: RequestId, patientId: UserId): Effect.Effect<OpenRequest, RequestNotFound | NotRequestOwner> =>
+  const open = (requestId: RequestId, patientId: UserId): Effect.Effect<OpenRequest, RequestNotFound | NotRequestOwner | RequestNotOpen> =>
     Effect.gen(function* () {
       const request = yield* requests.findById(requestId)
       
@@ -56,35 +57,34 @@ export const make = Effect.gen(function* () {
       return openRequest
     })
 
-  const placeBid = (input: { requestId: string; amount: number; availableDate: string; notes: string | null }, providerId: UserId): Effect.Effect<Bid, RequestNotFound | RequestNotOpen> =>
+  const placeBid = (input: { requestId: RequestId; amount: Money; availableDate: Date; notes: string | null }, providerId: UserId): Effect.Effect<Bid, RequestNotFound | RequestNotOpen> =>
     Effect.gen(function* () {
-      const requestId = input.requestId as RequestId
-      const request = yield* requests.findById(requestId)
+      const request = yield* requests.findById(input.requestId)
       
       if (request._tag !== "OpenRequest") {
-        return yield* new RequestNotOpen({ requestId, status: request._tag })
+        return yield* new RequestNotOpen({ requestId: input.requestId, status: request._tag })
       }
 
       const provider = yield* users.findById(providerId)
       
       const bid = new Bid({
         id: Schema.decodeUnknownSync(BidId)(crypto.randomUUID()),
-        requestId: requestId,
+        requestId: input.requestId,
         providerId,
         providerDisplayName: provider.displayName,
-        amount: Schema.decodeUnknownSync(Money)(input.amount),
-        availableDate: new Date(input.availableDate),
-        notes: input.notes,
+        amount: input.amount,
+        availableDate: input.availableDate,
+        notes: Option.fromNullable(input.notes),
         status: "active",
         createdAt: new Date(),
       })
 
       yield* bids.save(bid)
-      yield* notifier.notifyRoomUpdated(requestId)
+      yield* notifier.notifyRoomUpdated(input.requestId)
       return bid
     })
 
-  const withdrawBid = (bidId: BidId, providerId: UserId): Effect.Effect<Bid, BidNotFound | RequestNotOpen> =>
+  const withdrawBid = (bidId: BidId, providerId: UserId): Effect.Effect<Bid, BidNotFound | RequestNotOpen | RequestNotFound> =>
     Effect.gen(function* () {
       const bid = yield* bids.findById(bidId)
       const request = yield* requests.findById(bid.requestId)
