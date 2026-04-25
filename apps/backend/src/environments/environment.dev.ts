@@ -43,7 +43,7 @@ const MockAuthProviderLive = Layer.effect(
   })
 )
 
-const NodeServerLive = NodeHttpServer.layer(() => createServer(), { port })
+const NodeServerLive = NodeHttpServer.layer(() => createServer(), { port, host: "0.0.0.0" })
 
 // Base layers have no dependencies
 const BaseLayers = Layer.mergeAll(
