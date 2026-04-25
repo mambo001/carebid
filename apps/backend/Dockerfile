@@ -10,7 +10,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/api/package.json packages/api/package.json
 
-RUN npm install --legacy-peer-deps --verbose
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
@@ -20,4 +20,4 @@ RUN npx prisma generate --schema prisma/schema.prisma
 
 EXPOSE 8080
 
-CMD ["node", "dist/main.js"]
+CMD ["npx", "tsx", "src/main.ts"]
