@@ -8,6 +8,7 @@ export class CareRequests extends Context.Tag("@carebid/CareRequests")<
   {
     readonly findById: (id: RequestId) => Effect.Effect<CareRequest, RequestNotFound | DatabaseError>
     readonly findByPatient: (patientId: UserId) => Effect.Effect<ReadonlyArray<CareRequest>, DatabaseError>
+    readonly findOpen: () => Effect.Effect<ReadonlyArray<CareRequest>, DatabaseError>
     readonly save: (request: CareRequest) => Effect.Effect<void, DatabaseError>
   }
 >() {}
