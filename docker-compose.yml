@@ -68,7 +68,7 @@ services:
       [
         "sh",
         "-c",
-        "bunx prisma db push --schema prisma/schema.prisma --skip-generate && exec bun src/index.ts",
+        "npx prisma db push --schema prisma/schema.prisma --skip-generate && exec npm start",
       ]
     environment:
       NODE_ENV: production
@@ -85,7 +85,7 @@ services:
       test:
         [
           "CMD",
-          "bun",
+          "node",
           "-e",
           "fetch('http://127.0.0.1:8080/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
         ]
