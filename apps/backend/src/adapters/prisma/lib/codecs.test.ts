@@ -205,6 +205,22 @@ describe("CareRequest codecs", () => {
     })
   )
 
+  it.effect("should encode snake case specialist consult categories from API input", () =>
+    Effect.gen(function* () {
+      const draft = new DraftRequest({
+        id: "req_specialist",
+        patientId: "user_456",
+        title: "Specialist consult",
+        description: "Needs a specialist",
+        category: "specialist_consult",
+        createdAt: new Date("2024-01-01"),
+      })
+      const encoded = encodeCareRequestWrite(draft)
+
+      expect(encoded.category).toBe("specialist_consult")
+    })
+  )
+
   it.effect("should encode OpenRequest", () =>
     Effect.gen(function* () {
       const open = yield* decodeCareRequest(mockPrismaOpenRequest)

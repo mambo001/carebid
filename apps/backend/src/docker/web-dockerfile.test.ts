@@ -4,11 +4,11 @@ import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 
 describe("apps/web Dockerfile", () => {
-  it("copies the api workspace manifest before bun install", () => {
+  it("copies the api workspace manifest before npm install", () => {
     const dockerfilePath = resolve(import.meta.dirname, "../../../web/Dockerfile")
     const dockerfile = readFileSync(dockerfilePath, "utf8")
 
-    const installStep = dockerfile.indexOf("RUN bun install --frozen-lockfile")
+    const installStep = dockerfile.indexOf("RUN npm install --legacy-peer-deps --verbose")
     const apiManifestCopy = dockerfile.indexOf(
       "COPY packages/api/package.json packages/api/package.json",
     )

@@ -57,7 +57,7 @@ export interface PrismaCareRequest {
 // ============================================================================
 
 export type DomainBidStatus = "active" | "withdrawn" | "accepted"
-export type DomainProviderCategory = "specialistConsult" | "imaging"
+export type DomainProviderCategory = "specialistConsult" | "specialist_consult" | "imaging"
 
 // ============================================================================
 // Money Conversion Helpers
@@ -83,6 +83,7 @@ const decodeProviderCategory = (category: PrismaProviderCategory): DomainProvide
 const encodeProviderCategory = (category: DomainProviderCategory): PrismaProviderCategory => {
   switch (category) {
     case "specialistConsult":
+    case "specialist_consult":
       return "specialist_consult"
     case "imaging":
       return "imaging"
