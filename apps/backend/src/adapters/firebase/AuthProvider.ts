@@ -5,12 +5,49 @@ import { AuthProvider, AuthIdentity } from "../../ports/AuthProvider"
 import { Unauthorized } from "../../data/errors"
 import { UserId } from "../../data/branded"
 import { Schema } from "effect"
+import { makePrismaClient } from "../prisma/lib/prisma-client"
+
+type ProfileIdentity = {
+  readonly userId: string
+  readonly email: string
+}
+
+export const profileRowsFromIdentity = (identity: ProfileIdentity) => {
+  const displayName = identity.email.includes("@")
+    ? identity.email.split("@")[0]
+    : identity.userId
+
+  return {
+    patient: {
+      id: identity.userId,
+      authUserId: identity.userId,
+      email: identity.email,
+      displayName,
+      locationCity: "",
+      locationRegion: "",
+    },
+    provider: {
+      id: identity.userId,
+      authUserId: identity.userId,
+      email: identity.email,
+      displayName,
+      licenseRegion: null,
+      verificationStatus: "verified" as const,
+      verificationMode: "demo_auto" as const,
+    },
+    providerCategory: {
+      providerId: identity.userId,
+      category: "imaging" as const,
+    },
+  }
+}
 
 export const make = Effect.gen(function* () {
   const projectId = yield* Config.string("FIREBASE_PROJECT_ID")
   const emulatorHost = yield* Config.string("FIREBASE_AUTH_EMULATOR_HOST").pipe(
     Effect.option
   )
+  const prisma = yield* makePrismaClient
 
   // Development uses the Firebase Auth Emulator. In that mode the Admin SDK
   // must not require ADC; FIREBASE_AUTH_EMULATOR_HOST tells it where to verify.
@@ -20,6 +57,52 @@ export const make = Effect.gen(function* () {
     : initializeApp({ credential: applicationDefault(), projectId })
   const auth = getAuth(app)
 
+  const ensureProfiles = (identity: ProfileIdentity) => {
+    const rows = profileRowsFromIdentity(identity)
+
+    return Effect.tryPromise({
+      try: async () => {
+        await prisma.patient.upsert({
+          where: { authUserId: identity.userId },
+          create: rows.patient,
+          update: {
+            email: rows.patient.email,
+            displayName: rows.patient.displayName,
+          },
+        })
+        await prisma.provider.upsert({
+          where: { authUserId: identity.userId },
+          create: rows.provider,
+          update: {
+            email: rows.provider.email,
+            displayName: rows.provider.displayName,
+          },
+        })
+        await prisma.providerCategoryAssignment.upsert({
+          where: {
+            providerId_category: rows.providerCategory,
+          },
+          create: rows.providerCategory,
+          update: {},
+        })
+      },
+      catch: (error) => error,
+    }).pipe(Effect.orDie)
+  }
+
+  const identityFromDecoded = (decoded: { uid: string; email?: string; roles?: unknown }) =>
+    Effect.gen(function* () {
+      const email = decoded.email ?? ""
+      yield* ensureProfiles({ userId: decoded.uid, email })
+
+      return {
+        userId: Schema.decodeUnknownSync(UserId)(decoded.uid),
+        firebaseUid: decoded.uid,
+        email,
+        roles: (decoded.roles as Array<"patient" | "provider">) ?? ["patient"],
+      }
+    })
+
   const verifyToken = (token: string) => {
     // If emulator is configured, use emulator-aware verification
     if (emulatorHost._tag === "Some") {
@@ -27,14 +110,7 @@ export const make = Effect.gen(function* () {
         try: () => auth.verifyIdToken(token, true), // true = check revoked
         catch: (error) => new Unauthorized({ message: `Invalid token: ${error}` }),
       }).pipe(
-        Effect.flatMap((decoded) =>
-          Effect.succeed({
-            userId: Schema.decodeUnknownSync(UserId)(decoded.uid),
-            firebaseUid: decoded.uid,
-            email: decoded.email ?? "",
-            roles: (decoded.roles as Array<"patient" | "provider">) ?? ["patient"],
-          })
-        )
+        Effect.flatMap(identityFromDecoded)
       )
     }
 
@@ -43,14 +119,7 @@ export const make = Effect.gen(function* () {
       try: () => auth.verifyIdToken(token),
       catch: (error) => new Unauthorized({ message: `Invalid token: ${error}` }),
     }).pipe(
-      Effect.flatMap((decoded) =>
-        Effect.succeed({
-          userId: Schema.decodeUnknownSync(UserId)(decoded.uid),
-          firebaseUid: decoded.uid,
-          email: decoded.email ?? "",
-          roles: (decoded.roles as Array<"patient" | "provider">) ?? ["patient"],
-        })
-      )
+      Effect.flatMap(identityFromDecoded)
     )
   }
 

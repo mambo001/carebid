@@ -1,5 +1,5 @@
 import React from "react"
-import { Alert, Button, Card, CardContent, Chip, Stack, Typography } from "@mui/material"
+import { Alert, Button, Card, CardContent, Stack, Typography } from "@mui/material"
 
 import { signOutUser } from "../../../lib/auth"
 import { useSessionQuery, useSwitchRoleMutation } from "../../../lib/queries"
@@ -37,11 +37,6 @@ export function AuthStatusCard() {
               : "Not signed in"}
             {" · "}Active role: {session?.role ?? "none"}
           </Alert>
-
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {session?.patientProfile && <Chip label={`Patient: ${session.patientProfile.displayName}`} />}
-            {session?.providerProfile && <Chip label={`Provider: ${session.providerProfile.displayName}`} />}
-          </Stack>
 
           <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
             <Button variant="outlined" onClick={() => switchRole.mutate("patient")}>Use patient role</Button>

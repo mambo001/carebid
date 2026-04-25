@@ -12,13 +12,13 @@ import {
 } from "@mui/material"
 import { Link as RouterLink } from "react-router-dom"
 
-import { useRequestsQuery } from "../../../lib/queries"
+import { useOpenRequestsQuery } from "../../../lib/queries"
 import { useAppState } from "../../context"
 
 export function ProviderDashboardPage() {
   const setActiveRole = useAppState((state) => state.setActiveRole)
-  const requestsQuery = useRequestsQuery()
-  const requests = (requestsQuery.data?.items ?? []).filter((request) => request.status === "open")
+  const requestsQuery = useOpenRequestsQuery()
+  const requests = requestsQuery.data?.items ?? []
 
   return (
     <Stack spacing={3}>
@@ -54,11 +54,12 @@ export function ProviderDashboardPage() {
                     <Typography variant="h6" fontWeight={700}>
                       {request.title}
                     </Typography>
-                    <Chip label={request.urgency} color={request.urgency === "urgent" ? "error" : "default"} />
+                    <Chip label="open" color="success" />
                   </Stack>
                   <Typography color="text.secondary">
-                    {request.category.replaceAll("_", " ")} · {request.locationCity}
+                    {request.category.replaceAll("_", " ")}
                   </Typography>
+                  <Typography variant="body2">{request.description}</Typography>
                   <Button component={RouterLink} to={`/requests/${request.id}`} variant="outlined">
                     Join room
                   </Button>

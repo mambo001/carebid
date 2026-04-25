@@ -30,7 +30,9 @@ export const useRoomSocket = (requestId: string) => {
       stream.addEventListener("message", (event) => {
         const message = decodeRoomMessage(String(event.data))
 
-        queryClient.setQueryData(requestKeys.room(requestId), message.snapshot)
+        if ("request" in message) {
+          queryClient.setQueryData(requestKeys.room(requestId), message)
+        }
       })
     })
 

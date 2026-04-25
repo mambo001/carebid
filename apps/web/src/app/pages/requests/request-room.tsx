@@ -16,10 +16,12 @@ import {
 import { useEffect } from "react"
 import { useParams } from "react-router-dom"
 
-import { useAcceptBidMutation, useExpireRequestMutation, useOpenRequestMutation, useRoomSnapshotQuery } from "../../../lib/queries"
+import { useAcceptBidMutation, useOpenRequestMutation, useRoomSnapshotQuery } from "../../../lib/queries"
 import { useRoomSocket } from "../../../lib/use-room-socket"
 import { useAppState } from "../../context"
 import { ProviderBidCard } from "./provider-bid-card"
+
+const requestStatus = (tag: string) => tag.replace("Request", "").toLowerCase()
 
 export function RequestRoomPage() {
   const { requestId = "unknown" } = useParams()
@@ -27,12 +29,13 @@ export function RequestRoomPage() {
   const activeRole = useAppState((state) => state.activeRole)
   const roomQuery = useRoomSnapshotQuery(requestId)
   const acceptBid = useAcceptBidMutation(requestId)
-  const expireRequest = useExpireRequestMutation(requestId)
   const openRequest = useOpenRequestMutation()
 
   useRoomSocket(requestId)
 
-  const snapshot = roomQuery.data
+  const request = roomQuery.data?.request
+  const bids = request?._tag === "OpenRequest" || request?._tag === "AwardedRequest" ? request.bids : []
+  const status = request ? requestStatus(request._tag) : undefined
 
   useEffect(() => {
     setLastVisitedRequestId(requestId)
@@ -47,10 +50,10 @@ export function RequestRoomPage() {
       <div>
         <Typography variant="h2">Request room</Typography>
         <Typography color="text.secondary">Request ID: {requestId}</Typography>
-        {snapshot && (
+        {request && (
           <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-            <Chip label={`Status: ${snapshot.status}`} color={snapshot.status === "open" ? "success" : "default"} />
-            {snapshot.awardedBidId && <Chip label={`Awarded bid: ${snapshot.awardedBidId}`} />}
+            <Chip label={`Status: ${status}`} color={request._tag === "OpenRequest" ? "success" : "default"} />
+            {request._tag === "AwardedRequest" && <Chip label={`Awarded bid: ${request.awardedBidId}`} />}
           </Stack>
         )}
       </div>
@@ -61,14 +64,12 @@ export function RequestRoomPage() {
             <Typography variant="h6" fontWeight={700}>
               Current leaderboard
             </Typography>
-            <Typography color="text.secondary">
-              Connected viewers: {snapshot?.connectedViewers ?? 0}
-            </Typography>
+            {request && <Typography color="text.secondary">{request.title}</Typography>}
             <Divider />
             {roomQuery.isLoading && <Skeleton variant="rounded" height={180} />}
             <List disablePadding>
-              {snapshot?.leaderboard.map((entry, index) => (
-                <ListItem key={entry.bidId} disablePadding sx={{ py: 1.5 }}>
+              {bids.map((entry, index) => (
+                <ListItem key={entry.id} disablePadding sx={{ py: 1.5 }}>
                   <ListItemText
                     primary={`${index + 1}. ${entry.providerDisplayName}`}
                     secondary={`ETA ${entry.availableDate}${entry.notes ? ` · ${entry.notes}` : ""}`}
@@ -77,13 +78,13 @@ export function RequestRoomPage() {
                     <Typography fontWeight={700}>
                       PHP {(entry.amount / 100).toLocaleString()}
                     </Typography>
-                    {snapshot.awardedBidId === entry.bidId && <Chip label="Accepted" color="success" />}
-                    {activeRole === "patient" && snapshot.status === "open" && (
+                    {request?._tag === "AwardedRequest" && request.awardedBidId === entry.id && <Chip label="Accepted" color="success" />}
+                    {activeRole === "patient" && request?._tag === "OpenRequest" && (
                       <Button
                         size="small"
                         variant="outlined"
                         disabled={acceptBid.isPending}
-                        onClick={() => acceptBid.mutate({ requestId, bidId: entry.bidId })}
+                        onClick={() => acceptBid.mutate({ bidId: entry.id })}
                       >
                         Accept
                       </Button>
@@ -92,22 +93,11 @@ export function RequestRoomPage() {
                 </ListItem>
               ))}
             </List>
-            {roomQuery.isSuccess && snapshot?.leaderboard.length === 0 && (
+            {roomQuery.isSuccess && bids.length === 0 && (
               <Alert severity="warning">No bids in this room yet.</Alert>
             )}
 
-            {activeRole === "patient" && snapshot?.status === "open" && (
-              <Button
-                variant="text"
-                color="warning"
-                disabled={expireRequest.isPending}
-                onClick={() => expireRequest.mutate()}
-              >
-                {expireRequest.isPending ? "Expiring..." : "Expire request"}
-              </Button>
-            )}
-
-            {activeRole === "patient" && snapshot?.status === "draft" && (
+            {activeRole === "patient" && request?._tag === "DraftRequest" && (
               <Button
                 variant="contained"
                 disabled={openRequest.isPending}
@@ -120,7 +110,7 @@ export function RequestRoomPage() {
         </CardContent>
       </Card>
 
-      {activeRole === "provider" && snapshot?.status === "open" && <ProviderBidCard requestId={requestId} />}
+      {activeRole === "provider" && request?._tag === "OpenRequest" && <ProviderBidCard requestId={requestId} />}
     </Stack>
   )
 }

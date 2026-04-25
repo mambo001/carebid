@@ -1,15 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "./api"
-import type {
-  AcceptBidInput,
-  BidInput,
-  CreateCareRequestInput,
-  PatientOnboardingInput,
-  ProviderOnboardingInput,
-  WithdrawBidInput,
-  ViewerRole,
-} from "@carebid/shared"
+import type { AcceptBidInput, BidInput, CreateRequestInput, ViewerRole } from "./api"
 
 export const requestKeys = {
   all: ["requests"] as const,
@@ -21,6 +13,12 @@ export const useRequestsQuery = () =>
   useQuery({
     queryKey: requestKeys.all,
     queryFn: api.getRequests,
+  })
+
+export const useOpenRequestsQuery = () =>
+  useQuery({
+    queryKey: [...requestKeys.all, "open"] as const,
+    queryFn: api.getOpenRequests,
   })
 
 export const useRoomSnapshotQuery = (requestId: string) =>
@@ -49,24 +47,16 @@ export const useSwitchRoleMutation = () => {
 }
 
 export const usePatientOnboardingMutation = () => {
-  const queryClient = useQueryClient()
-
   return useMutation({
-    mutationFn: (input: PatientOnboardingInput) => api.onboardPatient(input),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: requestKeys.session })
-    },
+    mutationFn: (_input: unknown) =>
+      Promise.reject(new Error("Patient onboarding is not supported by the current backend API")),
   })
 }
 
 export const useProviderOnboardingMutation = () => {
-  const queryClient = useQueryClient()
-
   return useMutation({
-    mutationFn: (input: ProviderOnboardingInput) => api.onboardProvider(input),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: requestKeys.session })
-    },
+    mutationFn: (_input: unknown) =>
+      Promise.reject(new Error("Provider onboarding is not supported by the current backend API")),
   })
 }
 
@@ -74,7 +64,7 @@ export const useCreateRequestMutation = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: CreateCareRequestInput) => api.createRequest(input),
+    mutationFn: (input: CreateRequestInput) => api.createRequest(input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: requestKeys.all })
     },
@@ -88,6 +78,7 @@ export const useOpenRequestMutation = () => {
     mutationFn: (requestId: string) => api.openRequest(requestId),
     onSuccess: async (_, requestId) => {
       await queryClient.invalidateQueries({ queryKey: requestKeys.all })
+      await queryClient.invalidateQueries({ queryKey: [...requestKeys.all, "open"] })
       await queryClient.invalidateQueries({ queryKey: requestKeys.room(requestId) })
     },
   })
@@ -100,17 +91,7 @@ export const usePlaceBidMutation = (requestId: string) => {
     mutationFn: (input: BidInput) => api.placeBid(requestId, input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: requestKeys.room(requestId) })
-    },
-  })
-}
-
-export const useWithdrawBidMutation = (requestId: string) => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (input: WithdrawBidInput) => api.withdrawBid(requestId, input),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: requestKeys.room(requestId) })
+      await queryClient.invalidateQueries({ queryKey: [...requestKeys.all, "open"] })
     },
   })
 }
@@ -123,18 +104,7 @@ export const useAcceptBidMutation = (requestId: string) => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: requestKeys.room(requestId) })
       await queryClient.invalidateQueries({ queryKey: requestKeys.all })
-    },
-  })
-}
-
-export const useExpireRequestMutation = (requestId: string) => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: () => api.expireRequest(requestId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: requestKeys.room(requestId) })
-      await queryClient.invalidateQueries({ queryKey: requestKeys.all })
+      await queryClient.invalidateQueries({ queryKey: [...requestKeys.all, "open"] })
     },
   })
 }

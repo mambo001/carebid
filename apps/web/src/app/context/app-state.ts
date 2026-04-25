@@ -1,6 +1,6 @@
 import { create } from "zustand"
 
-import type { AppSession } from "@carebid/shared"
+import type { AppSession } from "../../lib/api"
 
 type AppRole = "patient" | "provider" | null
 

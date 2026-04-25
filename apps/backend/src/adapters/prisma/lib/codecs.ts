@@ -301,6 +301,12 @@ export const encodeCareRequest = (careRequest: CareRequest): PrismaCareRequest =
   }
 }
 
+export const encodeCareRequestWrite = (careRequest: CareRequest) => {
+  const { bids: _bids, ...writeData } = encodeCareRequest(careRequest)
+
+  return writeData
+}
+
 // ============================================================================
 // Batch Decode Helpers
 // ============================================================================

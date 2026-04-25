@@ -16,6 +16,8 @@ import { useOpenRequestMutation, useRequestsQuery } from "../../../lib/queries";
 import { useAppState } from "../../context";
 import { PatientRequestFormCard } from "./request-form-card";
 
+const requestStatus = (tag: string) => tag.replace("Request", "").toLowerCase()
+
 export function PatientDashboardPage() {
   const setActiveRole = useAppState((state) => state.setActiveRole);
   const requestsQuery = useRequestsQuery();
@@ -67,20 +69,16 @@ export function PatientDashboardPage() {
                     <Typography variant="h6" fontWeight={700}>
                       {request.title}
                     </Typography>
-                    <Chip
-                      label={request.status}
-                      color={request.status === "open" ? "success" : "default"}
-                    />
+                    <Chip label={requestStatus(request._tag)} color={request._tag === "OpenRequest" ? "success" : "default"} />
                   </Stack>
                   <Typography color="text.secondary">
                     {request.category.replaceAll("_", " ")}
                   </Typography>
                   <Typography variant="body2">
-                    Target budget: PHP{" "}
-                    {(request.targetBudget / 100).toLocaleString()}
+                    {request.description}
                   </Typography>
                   <Stack direction="row" spacing={1.5}>
-                    {request.status === "draft" && (
+                    {request._tag === "DraftRequest" && (
                       <Button
                         variant="contained"
                         onClick={() => openRequest.mutate(request.id)}

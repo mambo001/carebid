@@ -1,4 +1,4 @@
-import { HttpRouter, HttpServerResponse, HttpServerRequest, HttpMiddleware } from "@effect/platform"
+import { HttpBody, HttpRouter, HttpServerResponse, HttpServerRequest, HttpMiddleware } from "@effect/platform"
 import { Effect, Queue, Stream, Schedule, Schema } from "effect"
 
 import { AuthProvider } from "./ports/AuthProvider"
@@ -26,7 +26,11 @@ const withCorsHeaders = (response: HttpServerResponse.HttpServerResponse) =>
 // CORS middleware - handles preflight and adds headers to all responses, including failures.
 const corsMiddleware = <R, E>(
   httpApp: Effect.Effect<HttpServerResponse.HttpServerResponse, E, R>
-): Effect.Effect<HttpServerResponse.HttpServerResponse, E, R> =>
+): Effect.Effect<
+  HttpServerResponse.HttpServerResponse,
+  E | HttpBody.HttpBodyError,
+  R | HttpServerRequest.HttpServerRequest
+> =>
   Effect.gen(function* () {
     const request = yield* HttpServerRequest.HttpServerRequest
     

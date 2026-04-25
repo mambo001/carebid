@@ -1,6 +1,6 @@
 import { expect, it, describe } from "@effect/vitest"
 import { Effect, Either, Option } from "effect"
-import { decodeBid, encodeBid, decodeCareRequest, encodeCareRequest, PrismaBid, PrismaCareRequest } from "./codecs"
+import { decodeBid, encodeBid, decodeCareRequest, encodeCareRequest, encodeCareRequestWrite, PrismaBid, PrismaCareRequest } from "./codecs"
 import { Bid, DraftRequest, OpenRequest, AwardedRequest } from "../../../data/entities"
 
 describe("Bid codecs", () => {
@@ -191,6 +191,17 @@ describe("CareRequest codecs", () => {
       expect(encoded.awardedBidId).toBeNull()
       expect(encoded.title).toBe("Consultation Needed")
       expect(encoded.category).toBe("specialist_consult")
+    })
+  )
+
+  it.effect("should encode scalar care request write data without relation fields", () =>
+    Effect.gen(function* () {
+      const draft = yield* decodeCareRequest(mockPrismaDraftRequest)
+      const encoded = encodeCareRequestWrite(draft)
+
+      expect("bids" in encoded).toBe(false)
+      expect(encoded.status).toBe("draft")
+      expect(encoded.patientId).toBe("user_456")
     })
   )
 

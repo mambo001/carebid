@@ -3,7 +3,7 @@ import { CareRequests } from "../../ports/CareRequests"
 import { RequestId, UserId } from "../../data/branded"
 import { CareRequest } from "../../data/entities"
 import { RequestNotFound, DatabaseError } from "../../data/errors"
-import { decodeCareRequest, encodeCareRequest, PrismaCareRequest } from "./lib/codecs"
+import { decodeCareRequest, encodeCareRequestWrite, PrismaCareRequest } from "./lib/codecs"
 import { makePrismaClient } from "./lib/prisma-client"
 
 export const make = Effect.gen(function* () {
@@ -69,7 +69,7 @@ export const make = Effect.gen(function* () {
 
   const save = (request: CareRequest): Effect.Effect<void, DatabaseError> =>
     Effect.gen(function* () {
-      const encoded = encodeCareRequest(request)
+      const encoded = encodeCareRequestWrite(request)
 
       yield* Effect.tryPromise({
         try: () =>

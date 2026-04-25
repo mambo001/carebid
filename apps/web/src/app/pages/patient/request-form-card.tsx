@@ -46,7 +46,11 @@ export function PatientRequestFormCard() {
           <Form<RequestFormValues>
             initialValues={initialValues}
             onSubmit={async (values) => {
-              await createRequest.mutateAsync(values);
+              await createRequest.mutateAsync({
+                title: values.title,
+                description: values.sanitizedSummary,
+                category: values.category,
+              });
             }}
             render={({ handleSubmit, submitting, values }) => {
               const currentValues = values ?? initialValues;
