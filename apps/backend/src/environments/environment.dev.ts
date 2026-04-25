@@ -11,37 +11,9 @@ import * as UsersAdapter from "../adapters/in-memory/Users"
 import * as RoomNotifierAdapter from "../adapters/in-memory/RoomNotifier"
 import * as SseRegistryAdapter from "../adapters/in-memory/SseRegistry"
 import * as RequestCommandsAdapter from "../adapters/in-memory/RequestCommands"
-import { AuthProvider, AuthIdentity } from "../ports/AuthProvider"
-import { Unauthorized } from "../data/errors"
-import { UserId } from "../data/branded"
+import * as FirebaseAuthAdapter from "../adapters/firebase/AuthProvider"
 
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000
-
-const MockAuthProviderLive = Layer.effect(
-  AuthProvider,
-  Effect.gen(function* () {
-    const verifyToken = (token: string): Effect.Effect<AuthIdentity, Unauthorized> => {
-      if (token === "dev-patient") {
-        return Effect.succeed({
-          userId: "dev-patient-id" as UserId,
-          firebaseUid: "dev-patient-uid",
-          email: "patient@example.com",
-          roles: ["patient"] as Array<"patient" | "provider">,
-        })
-      }
-      if (token === "dev-provider") {
-        return Effect.succeed({
-          userId: "dev-provider-id" as UserId,
-          firebaseUid: "dev-provider-uid",
-          email: "provider@example.com",
-          roles: ["provider"] as Array<"patient" | "provider">,
-        })
-      }
-      return new Unauthorized({ message: "Invalid dev token" })
-    }
-    return AuthProvider.of({ verifyToken })
-  })
-)
 
 const NodeServerLive = NodeHttpServer.layer(() => createServer(), { port, host: "0.0.0.0" })
 
@@ -52,7 +24,7 @@ const BaseLayers = Layer.mergeAll(
   UsersAdapter.layer,
   RoomNotifierAdapter.layer,
   SseRegistryAdapter.layer,
-  MockAuthProviderLive
+  FirebaseAuthAdapter.layer
 )
 
 // RequestCommands depends on base layers

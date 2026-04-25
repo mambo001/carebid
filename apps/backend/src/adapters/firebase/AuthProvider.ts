@@ -1,5 +1,5 @@
 import { Effect, Layer, Config } from "effect"
-import { initializeApp } from "firebase-admin/app"
+import { initializeApp, applicationDefault } from "firebase-admin/app"
 import { getAuth } from "firebase-admin/auth"
 import { AuthProvider, AuthIdentity } from "../../ports/AuthProvider"
 import { Unauthorized } from "../../data/errors"
@@ -9,8 +9,15 @@ import { Schema } from "effect"
 export const make = Effect.gen(function* () {
   const projectId = yield* Config.string("FIREBASE_PROJECT_ID")
 
-  // Initialize Firebase Admin (uses ADC in Cloud Run)
-  const app = initializeApp({ projectId })
+  // Initialize Firebase Admin with Application Default Credentials
+  // This works with:
+  // - gcloud auth application-default login (local dev)
+  // - GOOGLE_APPLICATION_CREDENTIALS env var
+  // - Cloud Run service account (production)
+  const app = initializeApp({
+    credential: applicationDefault(),
+    projectId,
+  })
   const auth = getAuth(app)
 
   const verifyToken = (token: string) =>

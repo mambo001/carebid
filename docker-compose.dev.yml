@@ -9,10 +9,13 @@ services:
       - ./apps/backend/src:/app/apps/backend/src:ro
       - ./apps/backend/prisma:/app/apps/backend/prisma:ro
       - ./packages:/app/packages:ro
+      - ~/.config/gcloud:/root/.config/gcloud:ro
     command: ["npx", "tsx", "watch", "src/main.ts"]
     environment:
       - NODE_ENV=development
       - PORT=8080
+      - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-carebid-local}
 
   web:
     build:
