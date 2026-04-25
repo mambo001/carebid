@@ -27,7 +27,6 @@ services:
     volumes:
       - ./apps/web/index.html:/app/apps/web/index.html:ro
       - ./apps/web/src:/app/apps/web/src:ro
-      - ./apps/web/vite.config.ts:/app/apps/web/vite.config.ts:ro
       - ./packages:/app/packages:ro
       - ./tsconfig.base.json:/app/tsconfig.base.json:ro
       - /app/apps/web/node_modules

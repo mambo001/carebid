@@ -6,15 +6,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "")
 
   return {
-    plugins: [
-      react({
-        jsxRuntime: "automatic",
-        jsxImportSource: "react",
-      }),
-    ],
-    esbuild: {
-      jsxInject: `import React from "react"`,
-    },
+    plugins: [react()],
     resolve: {
       alias: {
         "@carebid/shared": path.resolve(__dirname, "../../packages/shared/src/index.ts"),
