@@ -25,7 +25,12 @@
     "docker": "docker compose up --build --force-recreate"
   },
   "dependencies": {
+    "@effect/cluster": "^0.58.2",
+    "@effect/platform-node": "^0.106.0",
     "@effect/schema": "^0.75.5",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^7.0.2",
     "@prisma/adapter-neon": "^6.6.0",
     "@prisma/client": "^6.6.0",
     "@tanstack/react-query": "^5.75.4",
@@ -34,9 +39,6 @@
     "final-form": "^5.0.0",
     "hono": "^4.8.5",
     "mui-rff": "^8.0.3",
-    "@mui/material": "^7.0.2",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
     "prisma": "^6.6.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

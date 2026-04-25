@@ -33,19 +33,17 @@ const getRequestIdFromPath = Effect.gen(function* () {
   return id as RequestId
 })
 
-// Handler for GET /health
-const healthHandler = Effect.succeed(HttpServerResponse.text("ok"))
+// Handler functions (not Effect values)
+const healthHandler = () => Effect.succeed(HttpServerResponse.text("ok"))
 
-// Handler for GET /api/requests
-const listRequestsHandler = Effect.gen(function* () {
+const listRequestsHandler = () => Effect.gen(function* () {
   const identity = yield* authenticate
   const requests = yield* CareRequests
   const items = yield* requests.findByPatient(identity.userId)
   return HttpServerResponse.json({ items })
 })
 
-// Handler for POST /api/requests
-const createRequestHandler = Effect.gen(function* () {
+const createRequestHandler = () => Effect.gen(function* () {
   const identity = yield* authenticate
   const commands = yield* RequestCommands
   const request = yield* HttpServerRequest.HttpServerRequest
@@ -54,8 +52,7 @@ const createRequestHandler = Effect.gen(function* () {
   return HttpServerResponse.json({ request: created }, { status: 201 })
 })
 
-// Handler for POST /api/requests/:id/open
-const openRequestHandler = Effect.gen(function* () {
+const openRequestHandler = () => Effect.gen(function* () {
   const identity = yield* authenticate
   const commands = yield* RequestCommands
   const requestId = yield* getRequestIdFromPath
@@ -63,8 +60,7 @@ const openRequestHandler = Effect.gen(function* () {
   return HttpServerResponse.json({ request: opened })
 })
 
-// Handler for GET /api/requests/:id/room
-const getRoomHandler = Effect.gen(function* () {
+const getRoomHandler = () => Effect.gen(function* () {
   yield* authenticate
   const requests = yield* CareRequests
   const requestId = yield* getRequestIdFromPath
@@ -72,8 +68,7 @@ const getRoomHandler = Effect.gen(function* () {
   return HttpServerResponse.json({ request })
 })
 
-// Handler for GET /api/requests/:id/stream
-const streamHandler = Effect.gen(function* () {
+const streamHandler = () => Effect.gen(function* () {
   yield* authenticate
   const requestId = yield* getRequestIdFromPath
   const registry = yield* SseRegistry
@@ -95,8 +90,7 @@ const streamHandler = Effect.gen(function* () {
   })
 })
 
-// Handler for POST /api/requests/:id/bids
-const placeBidHandler = Effect.gen(function* () {
+const placeBidHandler = () => Effect.gen(function* () {
   const identity = yield* authenticate
   const commands = yield* RequestCommands
   const request = yield* HttpServerRequest.HttpServerRequest
