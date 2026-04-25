@@ -16,13 +16,15 @@ ENV VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
 ENV VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
 ENV VITE_FIREBASE_AUTH_EMULATOR_URL=${VITE_FIREBASE_AUTH_EMULATOR_URL}
 
-COPY package.json tsconfig.base.json ./
+# Copy package files first (better caching)
+COPY package*.json tsconfig.base.json ./
 COPY apps/backend/package.json apps/backend/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/api/package.json packages/api/package.json
 COPY packages/shared/package.json packages/shared/package.json
 
-RUN npm install --legacy-peer-deps --verbose
+# Faster install with ci and skip optional deps
+RUN npm ci --legacy-peer-deps --omit=optional 2>&1 || npm install --legacy-peer-deps --omit=optional
 
 COPY . .
 
