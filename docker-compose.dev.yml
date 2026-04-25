@@ -23,6 +23,7 @@ services:
     ports:
       - "5173:5173"
     volumes:
+      - ./apps/web/index.html:/app/apps/web/index.html:ro
       - ./apps/web/src:/app/apps/web/src:ro
       - ./packages:/app/packages:ro
       - /app/apps/web/node_modules
