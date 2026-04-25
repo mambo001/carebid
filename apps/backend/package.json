@@ -7,17 +7,17 @@
     "@carebid/api": "workspace:*",
     "@carebid/shared": "workspace:*",
     "@effect/platform": "^0.96.0",
-    "@effect/platform-bun": "^0.72.0",
+    "@effect/platform-node": "^0.106.0",
+    "effect": "^3.21.0",
     "firebase-admin": "^13.4.0",
     "ioredis": "^5.7.0"
   },
   "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun",
-    "start": "bun dist/index.js",
-    "typecheck": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
-    "seed": "bun src/scripts/seed.ts"
+    "test": "vitest run"
   }
 }
