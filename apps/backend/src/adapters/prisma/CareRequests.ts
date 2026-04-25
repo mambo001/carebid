@@ -48,6 +48,25 @@ export const make = Effect.gen(function* () {
       )
     })
 
+  const findOpen = (): Effect.Effect<ReadonlyArray<CareRequest>, DatabaseError> =>
+    Effect.gen(function* () {
+      const rows = yield* Effect.tryPromise<PrismaCareRequest[], DatabaseError>({
+        try: () =>
+          prisma.careRequest.findMany({
+            where: { status: "open" },
+            include: { bids: true },
+          }) as Promise<PrismaCareRequest[]>,
+        catch: (error) => new DatabaseError({ cause: error }),
+      })
+
+      return yield* Effect.all(
+        rows.map((row) => decodeCareRequest(row)),
+        { concurrency: "unbounded" }
+      ).pipe(
+        Effect.mapError((error) => new DatabaseError({ cause: error }))
+      )
+    })
+
   const save = (request: CareRequest): Effect.Effect<void, DatabaseError> =>
     Effect.gen(function* () {
       const encoded = encodeCareRequest(request)
@@ -63,7 +82,7 @@ export const make = Effect.gen(function* () {
       })
     })
 
-  return CareRequests.of({ findById, findByPatient, save })
+  return CareRequests.of({ findById, findByPatient, findOpen, save })
 })
 
 export const layer = Layer.effect(CareRequests, make)

@@ -26,18 +26,22 @@ export const make = Effect.gen(function* () {
         category: input.category,
         createdAt: new Date(),
       })
-      yield* requests.save(request)
+      yield* requests.save(request).pipe(
+        Effect.catchTag("DatabaseError", () => Effect.die("DatabaseError in in-memory adapter"))
+      )
       return request
     })
 
   const open = (requestId: RequestId, patientId: UserId): Effect.Effect<OpenRequest, RequestNotFound | NotRequestOwner | RequestNotOpen> =>
     Effect.gen(function* () {
-      const request = yield* requests.findById(requestId)
-      
+      const request = yield* requests.findById(requestId).pipe(
+        Effect.catchTag("DatabaseError", () => Effect.die("DatabaseError in in-memory adapter"))
+      )
+
       if (request._tag !== "DraftRequest") {
         return yield* new RequestNotOpen({ requestId, status: request._tag })
       }
-      
+
       if (request.patientId !== patientId) {
         return yield* new NotRequestOwner({ requestId, userId: patientId })
       }
@@ -52,21 +56,25 @@ export const make = Effect.gen(function* () {
         openedAt: new Date(),
       })
 
-      yield* requests.save(openRequest)
+      yield* requests.save(openRequest).pipe(
+        Effect.catchTag("DatabaseError", () => Effect.die("DatabaseError in in-memory adapter"))
+      )
       yield* notifier.notifyRoomUpdated(requestId)
       return openRequest
     })
 
   const placeBid = (input: { requestId: RequestId; amount: Money; availableDate: Date; notes: string | null }, providerId: UserId): Effect.Effect<Bid, RequestNotFound | RequestNotOpen> =>
     Effect.gen(function* () {
-      const request = yield* requests.findById(input.requestId)
-      
+      const request = yield* requests.findById(input.requestId).pipe(
+        Effect.catchTag("DatabaseError", () => Effect.die("DatabaseError in in-memory adapter"))
+      )
+
       if (request._tag !== "OpenRequest") {
         return yield* new RequestNotOpen({ requestId: input.requestId, status: request._tag })
       }
 
       const provider = yield* users.findById(providerId)
-      
+
       const bid = new Bid({
         id: Schema.decodeUnknownSync(BidId)(crypto.randomUUID()),
         requestId: input.requestId,
@@ -87,8 +95,10 @@ export const make = Effect.gen(function* () {
   const withdrawBid = (bidId: BidId, providerId: UserId): Effect.Effect<Bid, BidNotFound | RequestNotOpen | RequestNotFound> =>
     Effect.gen(function* () {
       const bid = yield* bids.findById(bidId)
-      const request = yield* requests.findById(bid.requestId)
-      
+      const request = yield* requests.findById(bid.requestId).pipe(
+        Effect.catchTag("DatabaseError", () => Effect.die("DatabaseError in in-memory adapter"))
+      )
+
       if (request._tag !== "OpenRequest") {
         return yield* new RequestNotOpen({ requestId: bid.requestId, status: request._tag })
       }
@@ -105,12 +115,14 @@ export const make = Effect.gen(function* () {
 
   const acceptBid = (requestId: RequestId, bidId: BidId, patientId: UserId): Effect.Effect<AwardedRequest, RequestNotFound | NotRequestOwner | RequestNotOpen | BidNotFound> =>
     Effect.gen(function* () {
-      const request = yield* requests.findById(requestId)
-      
+      const request = yield* requests.findById(requestId).pipe(
+        Effect.catchTag("DatabaseError", () => Effect.die("DatabaseError in in-memory adapter"))
+      )
+
       if (request._tag !== "OpenRequest") {
         return yield* new RequestNotOpen({ requestId, status: request._tag })
       }
-      
+
       if (request.patientId !== patientId) {
         return yield* new NotRequestOwner({ requestId, userId: patientId })
       }
@@ -119,7 +131,7 @@ export const make = Effect.gen(function* () {
 
       // Mark all other bids as withdrawn
       const updatedBids = yield* Effect.forEach(request.bids, (b) =>
-        b.id === bidId 
+        b.id === bidId
           ? Effect.succeed(b)
           : Effect.succeed(new Bid({ ...b, status: "withdrawn" })),
         { concurrency: 1 }
@@ -136,19 +148,23 @@ export const make = Effect.gen(function* () {
         awardedAt: new Date(),
       })
 
-      yield* requests.save(awardedRequest)
+      yield* requests.save(awardedRequest).pipe(
+        Effect.catchTag("DatabaseError", () => Effect.die("DatabaseError in in-memory adapter"))
+      )
       yield* notifier.notifyRoomUpdated(requestId)
       return awardedRequest
     })
 
   const expire = (requestId: RequestId, patientId: UserId): Effect.Effect<OpenRequest, RequestNotFound | NotRequestOwner | RequestNotOpen> =>
     Effect.gen(function* () {
-      const request = yield* requests.findById(requestId)
-      
+      const request = yield* requests.findById(requestId).pipe(
+        Effect.catchTag("DatabaseError", () => Effect.die("DatabaseError in in-memory adapter"))
+      )
+
       if (request._tag !== "OpenRequest") {
         return yield* new RequestNotOpen({ requestId, status: request._tag })
       }
-      
+
       if (request.patientId !== patientId) {
         return yield* new NotRequestOwner({ requestId, userId: patientId })
       }
@@ -164,7 +180,9 @@ export const make = Effect.gen(function* () {
         bids: updatedBids,
       })
 
-      yield* requests.save(expiredRequest)
+      yield* requests.save(expiredRequest).pipe(
+        Effect.catchTag("DatabaseError", () => Effect.die("DatabaseError in in-memory adapter"))
+      )
       yield* notifier.notifyRoomUpdated(requestId)
       return expiredRequest
     })
