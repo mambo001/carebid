@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@carebid/shared": "workspace:*",
     "firebase": "^11.7.3"
   },
   "scripts": {

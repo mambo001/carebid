@@ -2,7 +2,6 @@
   "name": "carebid",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "bun@1.2.21",
   "workspaces": [
     "apps/*",
     "packages/*"
