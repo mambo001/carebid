@@ -1,4 +1,4 @@
-import { HttpRouter, HttpServerResponse, HttpServerRequest } from "@effect/platform"
+import { HttpRouter, HttpServerResponse, HttpServerRequest, HttpMiddleware } from "@effect/platform"
 import { Effect, Queue, Stream, Schedule, Schema } from "effect"
 
 import { AuthProvider } from "./ports/AuthProvider"
@@ -9,6 +9,34 @@ import { RequestId, Money, UserId, BidId } from "./data/branded"
 import { Unauthorized } from "./data/errors"
 import { authenticateRequest } from "./integration/auth"
 import { parseRequestIdFromPath } from "./integration/path"
+
+// CORS middleware
+const corsMiddleware = <R, E>(
+  httpApp: Effect.Effect<HttpServerResponse.HttpServerResponse, E, R>
+): Effect.Effect<HttpServerResponse.HttpServerResponse, E, R> =>
+  Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest
+    const response = yield* httpApp
+
+    // Handle preflight requests
+    if (request.method === "OPTIONS") {
+      return HttpServerResponse.text("", {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+      })
+    }
+
+    // Add CORS headers to all responses
+    return response.pipe(
+      HttpServerResponse.setHeader("Access-Control-Allow-Origin", "*"),
+      HttpServerResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"),
+      HttpServerResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    )
+  })
 
 const sseEncoder = new TextEncoder()
 const toSseChunk = (payload: string) => sseEncoder.encode(`data: ${payload}\n\n`)
@@ -161,7 +189,7 @@ const acceptBidHandler = withAuth((identity) =>
 )
 
 // Build router
-export const router = HttpRouter.empty.pipe(
+const apiRouter = HttpRouter.empty.pipe(
   HttpRouter.get("/health", healthHandler),
   HttpRouter.get("/api/requests", listRequestsHandler),
   HttpRouter.get("/api/requests/open", listOpenRequestsHandler),
@@ -172,3 +200,6 @@ export const router = HttpRouter.empty.pipe(
   HttpRouter.get("/api/requests/:id/stream", streamHandler),
   HttpRouter.post("/api/requests/:id/bids", placeBidHandler)
 )
+
+// Apply CORS middleware to all routes
+export const router = apiRouter.pipe(HttpMiddleware.make(corsMiddleware))
