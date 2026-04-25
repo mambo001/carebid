@@ -7,39 +7,29 @@ import { RequestCommands } from "./ports/RequestCommands"
 import { SseRegistry } from "./ports/SseRegistry"
 import { RequestId, Money, UserId } from "./data/branded"
 import { Unauthorized } from "./data/errors"
+import { authenticateRequest } from "./integration/auth"
+import { parseRequestIdFromPath } from "./integration/path"
 
 const sseEncoder = new TextEncoder()
 const toSseChunk = (payload: string) => sseEncoder.encode(`data: ${payload}\n\n`)
 const heartbeatChunk = sseEncoder.encode(": keep-alive\n\n")
 
-// Helper to get auth token
-const getAuthToken = Effect.gen(function* () {
-  const request = yield* HttpServerRequest.HttpServerRequest
-  const authHeader = request.headers["authorization"]
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return yield* new Unauthorized({ message: "Missing or invalid authorization header" })
-  }
-  return authHeader.slice(7)
-})
-
-// Get request ID from URL
-const getRequestId = Effect.gen(function* () {
-  const request = yield* HttpServerRequest.HttpServerRequest
-  const url = new URL(request.url, `http://localhost`)
-  const parts = url.pathname.split("/")
-  return parts[3] as RequestId
-})
-
-// Helper middleware to extract auth token
+// Authenticate middleware - extracts and verifies auth token
 const withAuth = <R, E, A>(
   handler: (identity: { userId: UserId; firebaseUid: string; email: string; roles: ReadonlyArray<"patient" | "provider"> }) => Effect.Effect<A, E, R>
 ): Effect.Effect<A, E | Unauthorized, R | AuthProvider | HttpServerRequest.HttpServerRequest> =>
   Effect.gen(function* () {
-    const token = yield* getAuthToken
-    const authProvider = yield* AuthProvider
-    const identity = yield* authProvider.verifyToken(token)
+    const request = yield* HttpServerRequest.HttpServerRequest
+    const identity = yield* authenticateRequest(request.headers["authorization"])
     return yield* handler({ ...identity, userId: identity.userId as UserId })
   })
+
+// Extract request ID from current request path
+const getRequestId = Effect.gen(function* () {
+  const request = yield* HttpServerRequest.HttpServerRequest
+  const url = new URL(request.url, `http://localhost`)
+  return parseRequestIdFromPath(url.pathname)
+})
 
 // Handler for GET /health
 const healthHandler = Effect.succeed(HttpServerResponse.text("ok"))
