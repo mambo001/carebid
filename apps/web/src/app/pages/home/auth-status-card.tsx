@@ -1,4 +1,3 @@
-import React from "react"
 import { Alert, Button, Card, CardContent, Chip, Stack, Typography } from "@mui/material"
 
 import { signOutUser } from "../../../lib/auth"

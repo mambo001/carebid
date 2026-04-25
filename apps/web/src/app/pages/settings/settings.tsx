@@ -1,4 +1,3 @@
-import React from "react"
 import { Alert, Card, CardContent, Stack, Typography } from "@mui/material"
 
 export function SettingsPage() {
