@@ -12,3 +12,4 @@ coverage/
 apps/backend/generated/
 .worktrees/
 docs
+firebase-debug.log
