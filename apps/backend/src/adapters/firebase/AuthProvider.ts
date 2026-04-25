@@ -4,6 +4,7 @@ import { getAuth } from "firebase-admin/auth"
 import { AuthProvider, AuthIdentity } from "../../ports/AuthProvider"
 import { Unauthorized } from "../../data/errors"
 import { UserId } from "../../data/branded"
+import { Schema } from "effect"
 
 export const make = Effect.gen(function* () {
   const projectId = yield* Config.string("FIREBASE_PROJECT_ID")
@@ -18,14 +19,12 @@ export const make = Effect.gen(function* () {
       catch: (error) => new Unauthorized({ message: `Invalid token: ${error}` }),
     }).pipe(
       Effect.flatMap((decoded) =>
-        Effect.succeed(
-          new AuthIdentity({
-            userId: UserId.makeUnsafe(decoded.uid),
-            firebaseUid: decoded.uid,
-            email: decoded.email ?? "",
-            roles: (decoded.roles as Array<"patient" | "provider">) ?? ["patient"],
-          })
-        )
+        Effect.succeed({
+          userId: Schema.decodeUnknownSync(UserId)(decoded.uid),
+          firebaseUid: decoded.uid,
+          email: decoded.email ?? "",
+          roles: (decoded.roles as Array<"patient" | "provider">) ?? ["patient"],
+        })
       )
     )
 

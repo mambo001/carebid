@@ -7,7 +7,7 @@ export class CareRequests extends Context.Tag("@carebid/CareRequests")<
   CareRequests,
   {
     readonly findById: (id: RequestId) => Effect.Effect<CareRequest, RequestNotFound>
-    readonly findByPatient: (patientId: UserId) => Effect.Effect<readonly CareRequest[]>
+    readonly findByPatient: (patientId: UserId) => Effect.Effect<ReadonlyArray<CareRequest>>
     readonly save: (request: CareRequest) => Effect.Effect<void>
   }
 >() {}

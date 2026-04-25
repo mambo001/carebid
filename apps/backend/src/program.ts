@@ -1,12 +1,11 @@
 import { HttpRouter, HttpServerResponse, HttpServerRequest } from "@effect/platform"
-import { Effect, Queue, Stream, Schedule } from "effect"
-import * as Schema from "@effect/schema/Schema"
+import { Effect, Queue, Stream, Schedule, Schema } from "effect"
 
 import { AuthProvider } from "./ports/AuthProvider"
 import { CareRequests } from "./ports/CareRequests"
-import { RequestCommands, CreateRequestInput, PlaceBidInput } from "./ports/RequestCommands"
+import { RequestCommands } from "./ports/RequestCommands"
 import { SseRegistry } from "./ports/SseRegistry"
-import { RequestId, BidId } from "./data/branded"
+import { RequestId } from "./data/branded"
 import { Unauthorized } from "./data/errors"
 
 const sseEncoder = new TextEncoder()
@@ -31,7 +30,7 @@ const getRequestIdFromPath = Effect.gen(function* () {
   const url = new URL(request.url, `http://localhost`)
   const parts = url.pathname.split("/")
   const id = parts[3] // /api/requests/:id/...
-  return RequestId.makeUnsafe(id)
+  return id as RequestId
 })
 
 export const router = HttpRouter.empty.pipe(
@@ -51,9 +50,8 @@ export const router = HttpRouter.empty.pipe(
     const identity = yield* authenticate
     const commands = yield* RequestCommands
     const request = yield* HttpServerRequest.HttpServerRequest
-    const body = yield* request.json
-    const input = yield* Schema.decodeUnknownEffect(CreateRequestInput)(body)
-    const created = yield* commands.create(input, identity.userId)
+    const body = yield* request.json as Effect.Effect<{ title: string; description: string; category: string }>
+    const created = yield* commands.create(body, identity.userId)
     return HttpServerResponse.json({ request: created }, { status: 201 })
   })),
 
@@ -103,9 +101,8 @@ export const router = HttpRouter.empty.pipe(
     const identity = yield* authenticate
     const commands = yield* RequestCommands
     const request = yield* HttpServerRequest.HttpServerRequest
-    const body = yield* request.json
-    const input = yield* Schema.decodeUnknownEffect(PlaceBidInput)(body)
-    const bid = yield* commands.placeBid(input, identity.userId)
+    const body = yield* request.json as Effect.Effect<{ requestId: string; amount: number; availableDate: string; notes: string | null }>
+    const bid = yield* commands.placeBid(body as any, identity.userId)
     return HttpServerResponse.json({ bid })
   }))
 )

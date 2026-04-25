@@ -1,7 +1,7 @@
-import { Schema } from "@effect/schema"
+import { Schema } from "effect"
 import { UserId, RequestId, BidId, Money } from "./branded"
 
-export class Bid extends Schema.Class("Bid")({
+export class Bid extends Schema.Class<Bid>("Bid")({
   id: BidId,
   requestId: RequestId,
   providerId: UserId,
@@ -13,7 +13,7 @@ export class Bid extends Schema.Class("Bid")({
   createdAt: Schema.Date,
 }) {}
 
-export class User extends Schema.Class("User")({
+export class User extends Schema.Class<User>("User")({
   id: UserId,
   displayName: Schema.String,
   roles: Schema.Array(Schema.Literal("patient", "provider")),
@@ -28,7 +28,7 @@ export class User extends Schema.Class("User")({
   }
 }
 
-export class DraftRequest extends Schema.TaggedClass("DraftRequest")("DraftRequest", {
+export class DraftRequest extends Schema.TaggedClass<DraftRequest>("DraftRequest")("DraftRequest", {
   id: RequestId,
   patientId: UserId,
   title: Schema.String,
@@ -37,7 +37,7 @@ export class DraftRequest extends Schema.TaggedClass("DraftRequest")("DraftReque
   createdAt: Schema.Date,
 }) {}
 
-export class OpenRequest extends Schema.TaggedClass("OpenRequest")("OpenRequest", {
+export class OpenRequest extends Schema.TaggedClass<OpenRequest>("OpenRequest")("OpenRequest", {
   id: RequestId,
   patientId: UserId,
   title: Schema.String,
@@ -47,7 +47,7 @@ export class OpenRequest extends Schema.TaggedClass("OpenRequest")("OpenRequest"
   openedAt: Schema.Date,
 }) {}
 
-export class AwardedRequest extends Schema.TaggedClass("AwardedRequest")("AwardedRequest", {
+export class AwardedRequest extends Schema.TaggedClass<AwardedRequest>("AwardedRequest")("AwardedRequest", {
   id: RequestId,
   patientId: UserId,
   title: Schema.String,
@@ -58,5 +58,5 @@ export class AwardedRequest extends Schema.TaggedClass("AwardedRequest")("Awarde
   awardedAt: Schema.Date,
 }) {}
 
-export const CareRequest = Schema.Union([DraftRequest, OpenRequest, AwardedRequest])
+export const CareRequest = Schema.Union(DraftRequest, OpenRequest, AwardedRequest)
 export type CareRequest = typeof CareRequest.Type

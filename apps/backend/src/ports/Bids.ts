@@ -6,7 +6,7 @@ import { BidNotFound } from "../data/errors"
 export class Bids extends Context.Tag("@carebid/Bids")<
   Bids,
   {
-    readonly findByRequest: (requestId: RequestId) => Effect.Effect<readonly Bid[]>
+    readonly findByRequest: (requestId: RequestId) => Effect.Effect<ReadonlyArray<Bid>>
     readonly findById: (id: BidId) => Effect.Effect<Bid, BidNotFound>
     readonly save: (bid: Bid) => Effect.Effect<void>
   }

@@ -1,4 +1,4 @@
-import { Context, Effect, Schema } from "effect"
+import { Context, Effect } from "effect"
 import { UserId, RequestId, BidId, Money } from "../data/branded"
 import { DraftRequest, OpenRequest, AwardedRequest, Bid } from "../data/entities"
 import {
@@ -9,18 +9,18 @@ import {
   InvalidAmount,
 } from "../data/errors"
 
-export class CreateRequestInput extends Schema.Class("CreateRequestInput")({
-  title: Schema.String,
-  description: Schema.String,
-  category: Schema.String,
-}) {}
+export interface CreateRequestInput {
+  readonly title: string
+  readonly description: string
+  readonly category: string
+}
 
-export class PlaceBidInput extends Schema.Class("PlaceBidInput")({
-  requestId: RequestId,
-  amount: Money,
-  availableDate: Schema.Date,
-  notes: Schema.OptionFromNullOr(Schema.String),
-}) {}
+export interface PlaceBidInput {
+  readonly requestId: RequestId
+  readonly amount: Money
+  readonly availableDate: Date
+  readonly notes: string | null
+}
 
 export type DomainError =
   | RequestNotFound

@@ -1,5 +1,5 @@
-import { BunHttpServer, BunRuntime } from "@effect/platform-bun"
-import { Effect, Config, Layer } from "effect"
+import { Effect, Layer, Config } from "effect"
+import { BunHttpServer } from "@effect/platform-bun"
 import { HttpServer } from "@effect/platform"
 
 import { router } from "./program"
@@ -26,4 +26,4 @@ const Main = Effect.gen(function* () {
   yield* Layer.launch(appLayer)
 })
 
-BunRuntime.runMain(Main)
+Effect.runFork(Main)
