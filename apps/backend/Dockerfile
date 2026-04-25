@@ -4,15 +4,13 @@ WORKDIR /app
 
 RUN apk add --no-cache openssl
 
-# Copy only package files first (better layer caching)
-COPY package*.json tsconfig.base.json ./
+COPY package.json tsconfig.base.json ./
 COPY apps/backend/package.json apps/backend/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/api/package.json packages/api/package.json
 COPY packages/shared/package.json packages/shared/package.json
 
-# Install with npm ci (faster, uses package-lock.json) and skip optional deps
-RUN npm ci --legacy-peer-deps --omit=optional 2>&1 || npm install --legacy-peer-deps --omit=optional
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
