@@ -1,3 +1,4 @@
+import React from "react"
 import { Grid, Skeleton, Stack } from "@mui/material"
 
 export function HomeSkeleton() {
