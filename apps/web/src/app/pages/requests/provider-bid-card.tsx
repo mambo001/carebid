@@ -4,20 +4,31 @@ import {
   Button,
   Card,
   CardContent,
+  InputAdornment,
   Stack,
   Typography,
 } from "@mui/material";
 import { Form } from "react-final-form";
-import { TextField } from "mui-rff";
+import { TextField, DatePicker } from "mui-rff";
 
-import type { Bid, BidInput } from "../../../lib/api";
+import type { Bid } from "../../../lib/api";
 
 import { usePlaceBidMutation } from "../../../lib/queries";
-import { providerBidInitialValues, providerBidSubmitInput } from "./provider-bid-card-submit";
+import {
+  providerBidInitialValues,
+  providerBidSubmitInput,
+  type ProviderBidFormValues,
+} from "./provider-bid-card-submit";
 
 const required = (value: unknown) => (value ? undefined : "Required");
 
-export function ProviderBidCard({ requestId, existingBid }: { requestId: string; existingBid?: Bid | null }) {
+export function ProviderBidCard({
+  requestId,
+  existingBid,
+}: {
+  requestId: string;
+  existingBid?: Bid | null;
+}) {
   const placeBid = usePlaceBidMutation(requestId);
   const initialValues = providerBidInitialValues(requestId, existingBid);
 
@@ -36,7 +47,7 @@ export function ProviderBidCard({ requestId, existingBid }: { requestId: string;
             </Typography>
           </div>
 
-          <Form<BidInput>
+          <Form<ProviderBidFormValues>
             initialValues={initialValues}
             onSubmit={(values) =>
               placeBid.mutateAsync(providerBidSubmitInput(requestId, values))
@@ -53,15 +64,20 @@ export function ProviderBidCard({ requestId, existingBid }: { requestId: string;
                     label="Bid amount"
                     type="number"
                     required
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">$</InputAdornment>
+                        ),
+                      },
+                    }}
                     fieldProps={{ validate: required }}
                   />
-                  <TextField
+                  <DatePicker
                     name="availableDate"
                     label="Available date"
-                    type="date"
                     required
                     fieldProps={{ validate: required }}
-                    InputLabelProps={{ shrink: true }}
                   />
                   <TextField name="notes" label="Notes" multiline minRows={2} />
 
@@ -70,7 +86,11 @@ export function ProviderBidCard({ requestId, existingBid }: { requestId: string;
                     variant="contained"
                     disabled={submitting || placeBid.isPending}
                   >
-                    {placeBid.isPending ? "Saving bid..." : existingBid ? "Update bid" : "Place bid"}
+                    {placeBid.isPending
+                      ? "Saving bid..."
+                      : existingBid
+                        ? "Update bid"
+                        : "Place bid"}
                   </Button>
                 </Stack>
               </form>

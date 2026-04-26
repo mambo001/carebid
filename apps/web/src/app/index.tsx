@@ -1,20 +1,23 @@
-import React from "react"
-import Box from "@mui/material/Box"
-import Container from "@mui/material/Container"
-import { CssBaseline, ThemeProvider } from "@mui/material"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { Suspense } from "react"
-import { ErrorBoundary } from "react-error-boundary"
+import React from "react";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container";
+import { CssBaseline, ThemeProvider } from "@mui/material";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import {
   BrowserRouter,
   Navigate,
   Outlet,
   Route,
   Routes,
-} from "react-router-dom"
+} from "react-router-dom";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { enUS } from "date-fns/locale/en-US";
 
-import { IdentityContextProvider, RoomContextProvider } from "./context"
-import { AppBar, BottomNavigation, BottomNavigationSkeleton } from "./nav"
+import { IdentityContextProvider, RoomContextProvider } from "./context";
+import { AppBar, BottomNavigation, BottomNavigationSkeleton } from "./nav";
 import {
   Home,
   HomeSkeleton,
@@ -24,12 +27,12 @@ import {
   Settings,
   SignIn,
   SignUp,
-} from "./pages"
-import { appTheme } from "./theme"
+} from "./pages";
+import { appTheme } from "./theme";
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient();
 
-const errorBoundaryFallback = <div>Something went wrong</div>
+const errorBoundaryFallback = <div>Something went wrong</div>;
 
 function AppSkeleton() {
   return (
@@ -38,19 +41,26 @@ function AppSkeleton() {
       <HomeSkeleton />
       <BottomNavigationSkeleton />
     </Box>
-  )
+  );
 }
 
 function AppLayout() {
   return (
-    <Box sx={{ minHeight: "100svh", display: "flex", flexDirection: "column", bgcolor: "background.default" }}>
+    <Box
+      sx={{
+        minHeight: "100svh",
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "background.default",
+      }}
+    >
       <AppBar />
       <Container maxWidth="lg" sx={{ flex: 1, py: 4 }}>
         <Outlet />
       </Container>
       <BottomNavigation />
     </Box>
-  )
+  );
 }
 
 export function AppInternal() {
@@ -68,7 +78,7 @@ export function AppInternal() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
-  )
+  );
 }
 
 export function App() {
@@ -79,15 +89,20 @@ export function App() {
         <ErrorBoundary fallback={errorBoundaryFallback}>
           <BrowserRouter>
             <Suspense fallback={<AppSkeleton />}>
-              <IdentityContextProvider>
-                <RoomContextProvider>
-                  <AppInternal />
-                </RoomContextProvider>
-              </IdentityContextProvider>
+              <LocalizationProvider
+                dateAdapter={AdapterDateFns}
+                adapterLocale={enUS}
+              >
+                <IdentityContextProvider>
+                  <RoomContextProvider>
+                    <AppInternal />
+                  </RoomContextProvider>
+                </IdentityContextProvider>
+              </LocalizationProvider>
             </Suspense>
           </BrowserRouter>
         </ErrorBoundary>
       </QueryClientProvider>
     </ThemeProvider>
-  )
+  );
 }

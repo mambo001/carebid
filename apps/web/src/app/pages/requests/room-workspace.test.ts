@@ -30,6 +30,6 @@ describe("getRoomWorkspaceControls", () => {
 
 describe("formatBidAmount", () => {
   it("formats API bid amounts as currency units without dividing by cents", () => {
-    expect(formatBidAmount(1200)).toBe("PHP 1,200")
+    expect(formatBidAmount(1200)).toBe("$1,200")
   })
 })

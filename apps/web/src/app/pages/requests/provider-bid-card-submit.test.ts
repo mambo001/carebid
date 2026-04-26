@@ -1,13 +1,17 @@
 import { describe, expect, it } from "bun:test"
 
-import { providerBidInitialValues, providerBidSubmitInput } from "./provider-bid-card-submit"
+import {
+  providerBidFormDateToApiDate,
+  providerBidInitialValues,
+  providerBidSubmitInput,
+} from "./provider-bid-card-submit"
 
 describe("providerBidSubmitInput", () => {
   it("normalizes edited numeric form values before sending to the backend", () => {
     const input = providerBidSubmitInput("request-1", {
       requestId: "request-1",
       amount: "125000",
-      availableDate: "2026-04-27",
+      availableDate: new Date(2026, 3, 27),
       notes: "Open slot available this week.",
     })
 
@@ -23,7 +27,7 @@ describe("providerBidSubmitInput", () => {
     const input = providerBidSubmitInput("request-1", {
       requestId: "request-1",
       amount: 120000,
-      availableDate: "2026-04-25",
+      availableDate: new Date(2026, 3, 25),
       notes: "",
     })
 
@@ -46,8 +50,12 @@ describe("providerBidInitialValues", () => {
     })).toEqual({
       requestId: "request-1",
       amount: 125000,
-      availableDate: "2026-04-27",
+      availableDate: new Date(2026, 3, 27),
       notes: "Updated slot.",
     })
+  })
+
+  it("formats form dates as YYYY-MM-DD for the backend", () => {
+    expect(providerBidFormDateToApiDate(new Date(2026, 3, 27))).toBe("2026-04-27")
   })
 })
