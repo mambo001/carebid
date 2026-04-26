@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "carebid-demo",
     "public": "apps/web/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "predeploy": ["bun run --filter @carebid/web build"],

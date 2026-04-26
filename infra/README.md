@@ -92,6 +92,13 @@ printf '%s' "$REDIS_URL" | gcloud secrets versions add carebid-redis-url --data-
 Terraform provisions the Firebase Hosting site and emits the production web build
 configuration. Export those values before building the web app:
 
+Authenticate the Firebase CLI before deploying:
+
+```bash
+npx firebase-tools logout
+npx firebase-tools login --reauth
+```
+
 ```bash
 cd infra/terraform
 export VITE_API_BASE_URL=$(terraform output -raw backend_url)
@@ -106,6 +113,9 @@ npx firebase-tools deploy --only hosting --project "$VITE_FIREBASE_PROJECT_ID"
 
 The explicit build command is useful for verifying the production bundle before
 deployment. `firebase deploy` also runs the `firebase.json` predeploy build.
+`firebase.json` pins Hosting to the `carebid-demo` site. If `gcp_project_id`
+changes, update `hosting.site` to the Terraform-managed Firebase Hosting site ID
+before deploying.
 The `.firebaserc` default project is a convenience for `carebid-demo`; passing
 `--project` from Terraform output is safer for production deploys.
 
