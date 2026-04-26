@@ -33,7 +33,7 @@ export const authenticateRequest = (
 ): Effect.Effect<AuthIdentity, Unauthorized, AuthProvider> => {
   const token = extractBearerToken(authHeader) ?? extractQueryToken(requestUrl)
   if (!token) {
-    return new Unauthorized({ message: "Missing or invalid authorization header" })
+    return Effect.fail(new Unauthorized({ message: "Missing or invalid authorization header" }))
   }
   return verifyAuthToken(token)
 }

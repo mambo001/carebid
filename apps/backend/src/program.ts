@@ -60,7 +60,16 @@ const corsMiddleware = <R, E>(
           { error: status === 401 ? "Unauthorized" : "Internal Server Error" },
           { status }
         )
-      })
+      }),
+      Effect.catchAllDefect((defect) =>
+        Effect.suspend(() => {
+          console.error("Unhandled defect in request handler:", defect)
+          return HttpServerResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+          )
+        })
+      )
     )
     
     return withCorsHeaders(response)
