@@ -31,7 +31,7 @@ export function HomePage() {
           Patients post care requests. Providers compete with price and availability.
         </Typography>
         <Typography variant="h3" color="text.secondary" sx={{ maxWidth: 680 }}>
-          CareBid focuses the first demo on specialist consults and imaging, with real-time bidding rooms backed by Durable Objects.
+          CareBid focuses the first demo on specialist consults and imaging, with real-time bidding rooms backed by server-sent events.
         </Typography>
       </Stack>
 

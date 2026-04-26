@@ -22,7 +22,7 @@ export function ProviderDashboardPage() {
 
   return (
     <Stack spacing={3}>
-      <Alert severity="info">Provider filtering is scaffolded. Eligibility and bidding now run through the room Durable Object.</Alert>
+      <Alert severity="info">Provider filtering is scaffolded. Bidding happens in real-time via server-sent events.</Alert>
 
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <div>

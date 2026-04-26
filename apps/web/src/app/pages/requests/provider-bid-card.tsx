@@ -35,7 +35,7 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
               Provider bid controls
             </Typography>
             <Typography color="text.secondary">
-              Bids are serialized through the request room Durable Object.
+              Bids are submitted via the Effect-based API and streamed in real-time via server-sent events.
             </Typography>
           </div>
 
