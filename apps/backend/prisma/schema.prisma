@@ -72,7 +72,7 @@ model DemoSession {
 model Patient {
   id             String        @id @default(cuid())
   authUserId     String        @unique
-  email          String        @unique
+  email          String
   displayName    String
   locationCity   String
   locationRegion String
@@ -84,7 +84,7 @@ model Patient {
 model Provider {
   id                 String                       @id @default(cuid())
   authUserId         String                       @unique
-  email              String                       @unique
+  email              String
   displayName        String
   rating             Decimal?                     @db.Decimal(3, 2)
   licenseRegion      String?
@@ -137,6 +137,7 @@ model Bid {
   id            String       @id @default(cuid())
   careRequestId String
   providerId    String
+  providerDisplayName String   @default("")
   amount        Int          @map("amountCents")
   availableDate DateTime
   notes         String?

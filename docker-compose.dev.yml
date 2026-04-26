@@ -9,7 +9,12 @@ services:
       - ./apps/backend/src:/app/apps/backend/src:ro
       - ./apps/backend/prisma:/app/apps/backend/prisma:ro
       - ./packages:/app/packages:ro
-    command: ["npx", "tsx", "watch", "src/main.ts"]
+    command:
+      [
+        "sh",
+        "-c",
+        "npx prisma db push --schema prisma/schema.prisma --skip-generate && exec npx tsx watch src/main.ts",
+      ]
     environment:
       - NODE_ENV=development
       - PORT=8080

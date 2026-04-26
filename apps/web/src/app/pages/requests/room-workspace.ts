@@ -7,3 +7,6 @@ export const getRoomWorkspaceControls = (workspace: RoomWorkspace, requestTag: R
   canOpenRequest: workspace === "patient" && requestTag === "DraftRequest",
   canPlaceBid: workspace === "provider" && requestTag === "OpenRequest",
 })
+
+export const formatBidAmount = (amount: number) =>
+  `PHP ${amount.toLocaleString()}`

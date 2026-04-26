@@ -19,15 +19,13 @@ export interface PrismaBid {
   readonly id: string
   readonly careRequestId: string
   readonly providerId: string
+  readonly providerDisplayName: string
   readonly amount: number // cents
   readonly availableDate: Date
   readonly notes: string | null
   readonly status: PrismaBidStatus
   readonly createdAt: Date
   readonly updatedAt: Date
-  readonly provider?: {
-    readonly displayName: string
-  }
 }
 
 export interface PrismaCareRequest {
@@ -137,13 +135,12 @@ export const decodeBid = (prismaBid: PrismaBid): Effect.Effect<Bid, ParseResult.
     const requestId = yield* validateRequestId(prismaBid.careRequestId)
     const providerId = yield* validateUserId(prismaBid.providerId)
     const amount = yield* validateMoney(centsToDollars(prismaBid.amount))
-    const providerDisplayName = prismaBid.provider?.displayName ?? "Unknown Provider"
 
     return new Bid({
       id,
       requestId,
       providerId,
-      providerDisplayName,
+      providerDisplayName: prismaBid.providerDisplayName || "Unknown Provider",
       amount,
       availableDate: prismaBid.availableDate,
       notes: decodeOptionString(prismaBid.notes),
@@ -156,6 +153,7 @@ export const encodeBid = (bid: Bid): PrismaBid => ({
   id: bid.id,
   careRequestId: bid.requestId,
   providerId: bid.providerId,
+  providerDisplayName: bid.providerDisplayName,
   amount: dollarsToCents(bid.amount),
   availableDate: bid.availableDate,
   notes: Option.match(bid.notes, {

@@ -8,15 +8,13 @@ describe("Bid codecs", () => {
     id: "bid_123",
     careRequestId: "req_456",
     providerId: "user_789",
+    providerDisplayName: "Dr. Smith",
     amount: 15000, // $150.00 in cents
     availableDate: new Date("2024-06-15"),
     notes: "Available afternoons",
     status: "active",
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
-    provider: {
-      displayName: "Dr. Smith",
-    },
   }
 
   it.effect("should decode PrismaBid to domain Bid", () =>
@@ -31,6 +29,14 @@ describe("Bid codecs", () => {
       expect(result.status).toBe("active")
       expect(Option.isSome(result.notes)).toBe(true)
       expect(result.notes.pipe(Option.getOrNull)).toBe("Available afternoons")
+    })
+  )
+
+  it.effect("should preserve the stored provider display name without requiring a join", () =>
+    Effect.gen(function* () {
+      const result = yield* decodeBid({ ...mockPrismaBid })
+
+      expect(result.providerDisplayName).toBe("Dr. Smith")
     })
   )
 
@@ -69,6 +75,7 @@ describe("Bid codecs", () => {
       expect(encoded.id).toBe("bid_123")
       expect(encoded.careRequestId).toBe("req_456")
       expect(encoded.providerId).toBe("user_789")
+      expect(encoded.providerDisplayName).toBe("Dr. Smith")
       expect(encoded.amount).toBe(15000) // Back to cents
       expect(encoded.status).toBe("active")
       expect(encoded.notes).toBe("Available afternoons")

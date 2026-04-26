@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"
 import { Effect, Layer, ParseResult } from "effect"
 import { Bids } from "../../ports/Bids"
 import { BidId, RequestId, UserId } from "../../data/branded"
@@ -10,6 +11,13 @@ import { makePrismaClient } from "./lib/prisma-client"
 const handleDbError = (error: DatabaseError | ParseResult.ParseError): Effect.Effect<never> =>
   Effect.die(error)
 
+export const bidSaveWhere = (bid: { readonly requestId: string; readonly providerId: string }) => ({
+  careRequestId_providerId: {
+    careRequestId: bid.requestId,
+    providerId: bid.providerId,
+  },
+})
+
 export const make = Effect.gen(function* () {
   const prisma = yield* makePrismaClient
 
@@ -19,7 +27,6 @@ export const make = Effect.gen(function* () {
         try: () =>
           prisma.bid.findUnique({
             where: { id },
-            include: { provider: true },
           }) as Promise<PrismaBid | null>,
         catch: (error) => new DatabaseError({ cause: error }),
       })
@@ -43,7 +50,6 @@ export const make = Effect.gen(function* () {
         try: () =>
           prisma.bid.findMany({
             where: { careRequestId: requestId },
-            include: { provider: true },
             orderBy: { createdAt: "desc" },
           }) as Promise<PrismaBid[]>,
         catch: (error) => new DatabaseError({ cause: error }),
@@ -61,7 +67,6 @@ export const make = Effect.gen(function* () {
         try: () =>
           prisma.bid.findMany({
             where: { providerId },
-            include: { provider: true },
             orderBy: { createdAt: "desc" },
           }) as Promise<PrismaBid[]>,
         catch: (error) => new DatabaseError({ cause: error }),
@@ -76,17 +81,29 @@ export const make = Effect.gen(function* () {
   const save = (bid: Bid): Effect.Effect<void> =>
     Effect.gen(function* () {
       const encoded = encodeBid(bid)
+      const data = {
+        id: encoded.id,
+        careRequestId: encoded.careRequestId,
+        providerId: encoded.providerId,
+        providerDisplayName: encoded.providerDisplayName,
+        amount: encoded.amount,
+        availableDate: encoded.availableDate,
+        notes: encoded.notes,
+        status: encoded.status,
+        createdAt: encoded.createdAt,
+        updatedAt: encoded.updatedAt,
+      } satisfies Prisma.BidUncheckedCreateInput
 
       yield* Effect.tryPromise({
         try: () =>
           prisma.bid.upsert({
-            where: { id: bid.id },
-            create: encoded as unknown as { [key: string]: unknown },
+            where: bidSaveWhere(bid),
+            create: data,
             update: {
-              amount: encoded.amount,
-              availableDate: encoded.availableDate,
-              notes: encoded.notes,
-              status: encoded.status,
+              amount: data.amount,
+              availableDate: data.availableDate,
+              notes: data.notes,
+              status: data.status,
               updatedAt: new Date(),
             },
           }),

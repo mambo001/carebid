@@ -2,7 +2,8 @@ import { describe, expect, it } from "bun:test"
 
 import type { AppSession } from "@carebid/shared"
 
-import { getProviderBidActor } from "./provider-bid-card-state"
+import type { Bid } from "../../../lib/api"
+import { getProviderBidActor, getProviderExistingBid } from "./provider-bid-card-state"
 
 describe("getProviderBidActor", () => {
   it("returns null when there is no provider profile in the session", () => {
@@ -37,5 +38,29 @@ describe("getProviderBidActor", () => {
       providerId: "provider-123",
       providerDisplayName: "Demo Provider",
     })
+  })
+})
+
+describe("getProviderExistingBid", () => {
+  const bids: ReadonlyArray<Bid> = [
+    {
+      id: "bid-1",
+      requestId: "request-1",
+      providerId: "provider-1",
+      providerDisplayName: "Provider One",
+      amount: 120000,
+      availableDate: "2026-04-25T00:00:00.000Z",
+      notes: "Open slot available this week.",
+      status: "active",
+      createdAt: "2026-04-24T00:00:00.000Z",
+    },
+  ]
+
+  it("returns the provider bid when one already exists", () => {
+    expect(getProviderExistingBid("provider-1", bids)?.id).toBe("bid-1")
+  })
+
+  it("returns null when the provider has not bid", () => {
+    expect(getProviderExistingBid("provider-2", bids)).toBeNull()
   })
 })

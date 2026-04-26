@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test"
 
-import { getRoomWorkspaceControls } from "./room-workspace"
+import { formatBidAmount, getRoomWorkspaceControls } from "./room-workspace"
 
 describe("getRoomWorkspaceControls", () => {
   it("shows draft-opening controls for the patient workspace", () => {
@@ -25,5 +25,11 @@ describe("getRoomWorkspaceControls", () => {
       canOpenRequest: false,
       canPlaceBid: true,
     })
+  })
+})
+
+describe("formatBidAmount", () => {
+  it("formats API bid amounts as currency units without dividing by cents", () => {
+    expect(formatBidAmount(1200)).toBe("PHP 1,200")
   })
 })

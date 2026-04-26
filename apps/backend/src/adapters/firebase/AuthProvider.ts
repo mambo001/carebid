@@ -103,7 +103,13 @@ export const make = Effect.gen(function* () {
         )
       },
       catch: (error) => error,
-    }).pipe(Effect.orDie)
+    }).pipe(
+      Effect.catchAll((error) =>
+        Effect.logError("Failed to sync user profiles").pipe(
+          Effect.annotateLogs({ error: String(error) })
+        )
+      )
+    )
   }
 
   const identityFromDecoded = (decoded: { uid: string; email?: string; roles?: unknown }) =>

@@ -10,21 +10,16 @@ import {
 import { Form } from "react-final-form";
 import { TextField } from "mui-rff";
 
-import type { BidInput } from "../../../lib/api";
+import type { Bid, BidInput } from "../../../lib/api";
 
 import { usePlaceBidMutation } from "../../../lib/queries";
+import { providerBidInitialValues, providerBidSubmitInput } from "./provider-bid-card-submit";
 
 const required = (value: unknown) => (value ? undefined : "Required");
 
-export function ProviderBidCard({ requestId }: { requestId: string }) {
+export function ProviderBidCard({ requestId, existingBid }: { requestId: string; existingBid?: Bid | null }) {
   const placeBid = usePlaceBidMutation(requestId);
-
-  const initialValues: BidInput = {
-    requestId,
-    amount: 120000,
-    availableDate: "2026-04-25",
-    notes: "Open slot available this week.",
-  };
+  const initialValues = providerBidInitialValues(requestId, existingBid);
 
   return (
     <Card elevation={0} sx={{ borderRadius: 4 }}>
@@ -32,21 +27,19 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
         <Stack spacing={3}>
           <div>
             <Typography variant="h6" fontWeight={700}>
-              Provider bid controls
+              {existingBid ? "Update provider bid" : "Provider bid controls"}
             </Typography>
             <Typography color="text.secondary">
-              Bids are submitted via the Effect-based API and streamed in real-time via server-sent events.
+              {existingBid
+                ? "You already submitted a bid for this request. Editing this form updates that bid."
+                : "Bids are submitted via the Effect-based API and streamed in real-time via server-sent events."}
             </Typography>
           </div>
 
           <Form<BidInput>
             initialValues={initialValues}
             onSubmit={(values) =>
-              placeBid.mutateAsync({
-                ...values,
-                requestId,
-                notes: values.notes ?? null,
-              })
+              placeBid.mutateAsync(providerBidSubmitInput(requestId, values))
             }
             render={({ handleSubmit, submitting }) => (
               <form onSubmit={handleSubmit} noValidate>
@@ -77,7 +70,7 @@ export function ProviderBidCard({ requestId }: { requestId: string }) {
                     variant="contained"
                     disabled={submitting || placeBid.isPending}
                   >
-                    {placeBid.isPending ? "Saving bid..." : "Place bid"}
+                    {placeBid.isPending ? "Saving bid..." : existingBid ? "Update bid" : "Place bid"}
                   </Button>
                 </Stack>
               </form>

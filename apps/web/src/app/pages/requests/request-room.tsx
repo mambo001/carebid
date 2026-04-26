@@ -22,13 +22,16 @@ import { useAcceptBidMutation, useOpenRequestMutation, useRoomSnapshotQuery } fr
 import { useRoomSocket } from "../../../lib/use-room-socket"
 import { useAppState } from "../../context"
 import { ProviderBidCard } from "./provider-bid-card"
-import { getRoomWorkspaceControls, type RoomWorkspace } from "./room-workspace"
+import { getProviderExistingBid } from "./provider-bid-card-state"
+import { formatBidAmount, getRoomWorkspaceControls, type RoomWorkspace } from "./room-workspace"
 
 const requestStatus = (tag: string) => tag.replace("Request", "").toLowerCase()
 
 export function RequestRoomPage() {
   const { requestId = "unknown" } = useParams()
   const setLastVisitedRequestId = useAppState((state) => state.setLastVisitedRequestId)
+  const session = useAppState((state) => state.session)
+  const authUser = useAppState((state) => state.authUser)
   const [workspace, setWorkspace] = useState<RoomWorkspace>("provider")
   const roomQuery = useRoomSnapshotQuery(requestId)
   const acceptBid = useAcceptBidMutation(requestId)
@@ -40,6 +43,8 @@ export function RequestRoomPage() {
   const bids = request?._tag === "OpenRequest" || request?._tag === "AwardedRequest" ? request.bids : []
   const status = request ? requestStatus(request._tag) : undefined
   const controls = request ? getRoomWorkspaceControls(workspace, request._tag) : undefined
+  const providerId = session?.authUserId ?? authUser?.id
+  const existingProviderBid = getProviderExistingBid(providerId, bids)
 
   useEffect(() => {
     setLastVisitedRequestId(requestId)
@@ -104,7 +109,7 @@ export function RequestRoomPage() {
                   />
                   <Stack direction={{ xs: "column", md: "row" }} spacing={1} alignItems={{ md: "center" }}>
                     <Typography fontWeight={700}>
-                      PHP {(entry.amount / 100).toLocaleString()}
+                      {formatBidAmount(entry.amount)}
                     </Typography>
                     {request?._tag === "AwardedRequest" && request.awardedBidId === entry.id && <Chip label="Accepted" color="success" />}
                     {controls?.canAcceptBid && (
@@ -138,7 +143,7 @@ export function RequestRoomPage() {
         </CardContent>
       </Card>
 
-      {controls?.canPlaceBid && <ProviderBidCard requestId={requestId} />}
+      {controls?.canPlaceBid && <ProviderBidCard requestId={requestId} existingBid={existingProviderBid} />}
     </Stack>
   )
 }

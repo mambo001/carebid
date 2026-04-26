@@ -19,6 +19,7 @@ export const useOpenRequestsQuery = () =>
   useQuery({
     queryKey: [...requestKeys.all, "open"] as const,
     queryFn: api.getOpenRequests,
+    refetchInterval: 2_000,
   })
 
 export const useRoomSnapshotQuery = (requestId: string) =>
