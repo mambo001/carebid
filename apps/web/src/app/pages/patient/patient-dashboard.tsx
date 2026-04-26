@@ -13,13 +13,11 @@ import {
 import { Link as RouterLink } from "react-router-dom";
 
 import { useOpenRequestMutation, useRequestsQuery } from "../../../lib/queries";
-import { useAppState } from "../../context";
 import { PatientRequestFormCard } from "./request-form-card";
 
 const requestStatus = (tag: string) => tag.replace("Request", "").toLowerCase()
 
 export function PatientDashboardPage() {
-  const setActiveRole = useAppState((state) => state.setActiveRole);
   const requestsQuery = useRequestsQuery();
   const openRequest = useOpenRequestMutation();
   const requests = requestsQuery.data?.items ?? [];
@@ -39,8 +37,8 @@ export function PatientDashboardPage() {
           </Typography>
         </div>
 
-        <Button variant="contained" onClick={() => setActiveRole("patient")}>
-          Use patient role
+        <Button component={RouterLink} to="/" variant="outlined">
+          Switch workspace
         </Button>
       </Stack>
 

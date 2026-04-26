@@ -14,12 +14,10 @@ import { providerCategories } from "@carebid/shared"
 
 import { useAppState } from "../../context/app-state"
 import { AuthStatusCard } from "./auth-status-card"
-import { PatientOnboardingCard } from "./patient-onboarding-card"
-import { ProviderOnboardingCard } from "./provider-onboarding-card"
 
 export function HomePage() {
-  const neonUser = useAppState((state) => state.neonUser)
-  const isAuthenticated = Boolean(neonUser)
+  const authUser = useAppState((state) => state.authUser)
+  const isAuthenticated = Boolean(authUser)
 
   return (
     <Stack spacing={4}>
@@ -39,23 +37,25 @@ export function HomePage() {
         <>
           <Stack direction="row" spacing={2}>
             <Button component={RouterLink} to="/patient" variant="contained" size="large">
-              Enter patient flow
+              Enter patient workspace
             </Button>
             <Button component={RouterLink} to="/provider" variant="outlined" size="large">
-              Enter provider flow
+              Enter provider workspace
             </Button>
           </Stack>
 
           <AuthStatusCard />
 
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <PatientOnboardingCard />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <ProviderOnboardingCard />
-            </Grid>
-          </Grid>
+          <Card elevation={0} sx={{ borderRadius: 4 }}>
+            <CardContent>
+              <Stack spacing={1}>
+                <Typography variant="h2">Demo profiles are ready</Typography>
+                <Typography color="text.secondary">
+                  The backend automatically creates patient and provider demo profiles for each signed-in Firebase user. Use the workspace links above to move between request creation and provider bidding.
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
         </>
       ) : (
         <Stack direction="row" spacing={2}>

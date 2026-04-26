@@ -7,9 +7,9 @@ import { useAppState } from "./app-state"
 export function IdentityContextProvider({ children }: PropsWithChildren) {
   const [authResolved, setAuthResolved] = useState(false)
   const setSession = useAppState((state) => state.setSession)
-  const neonUser = useAppState((state) => state.neonUser)
-  const setNeonUser = useAppState((state) => state.setNeonUser)
-  const sessionQuery = useSessionQuery(authResolved && Boolean(neonUser))
+  const authUser = useAppState((state) => state.authUser)
+  const setAuthUser = useAppState((state) => state.setAuthUser)
+  const sessionQuery = useSessionQuery(authResolved && Boolean(authUser))
 
   useEffect(() => {
     if (sessionQuery.data?.session) {
@@ -18,19 +18,19 @@ export function IdentityContextProvider({ children }: PropsWithChildren) {
   }, [sessionQuery.data, setSession])
 
   useEffect(() => {
-    if (authResolved && !neonUser) {
+    if (authResolved && !authUser) {
       setSession(null)
     }
-  }, [authResolved, neonUser, setSession])
+  }, [authResolved, authUser, setSession])
 
   useEffect(() => {
     let cancelled = false
 
-    setNeonUser(getCurrentAuthUser())
+    setAuthUser(getCurrentAuthUser())
 
     const unsubscribe = observeAuthUser((user) => {
       if (!cancelled) {
-        setNeonUser(user)
+        setAuthUser(user)
         setAuthResolved(true)
       }
     })
@@ -39,7 +39,7 @@ export function IdentityContextProvider({ children }: PropsWithChildren) {
       cancelled = true
       unsubscribe()
     }
-  }, [setNeonUser])
+  }, [setAuthUser])
 
   return children
 }

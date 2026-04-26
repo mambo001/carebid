@@ -26,7 +26,7 @@ const required = (value: unknown) => (value ? undefined : "Required")
 
 export function SignUpPage() {
   const navigate = useNavigate()
-  const setNeonUser = useAppState((state) => state.setNeonUser)
+  const setAuthUser = useAppState((state) => state.setAuthUser)
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (values: SignUpValues) => {
@@ -35,7 +35,7 @@ export function SignUpPage() {
       const user = await signUpUser(values.name, values.email, values.password)
 
       if (user) {
-        setNeonUser({
+        setAuthUser({
           id: user.id,
           email: user.email,
           name: user.name,

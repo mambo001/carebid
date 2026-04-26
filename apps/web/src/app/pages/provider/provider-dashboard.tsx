@@ -13,10 +13,8 @@ import {
 import { Link as RouterLink } from "react-router-dom"
 
 import { useOpenRequestsQuery } from "../../../lib/queries"
-import { useAppState } from "../../context"
 
 export function ProviderDashboardPage() {
-  const setActiveRole = useAppState((state) => state.setActiveRole)
   const requestsQuery = useOpenRequestsQuery()
   const requests = requestsQuery.data?.items ?? []
 
@@ -32,8 +30,8 @@ export function ProviderDashboardPage() {
           </Typography>
         </div>
 
-        <Button variant="contained" onClick={() => setActiveRole("provider")}>
-          Use provider role
+        <Button component={RouterLink} to="/" variant="outlined">
+          Switch workspace
         </Button>
       </Stack>
 

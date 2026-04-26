@@ -2,19 +2,18 @@ import React from "react"
 import { Alert, Button, Card, CardContent, Stack, Typography } from "@mui/material"
 
 import { signOutUser } from "../../../lib/auth"
-import { useSessionQuery, useSwitchRoleMutation } from "../../../lib/queries"
+import { useSessionQuery } from "../../../lib/queries"
 import { useAppState } from "../../context/app-state"
 
 export function AuthStatusCard() {
   const sessionQuery = useSessionQuery()
-  const switchRole = useSwitchRoleMutation()
   const session = sessionQuery.data?.session
-  const neonUser = useAppState((state) => state.neonUser)
-  const setNeonUser = useAppState((state) => state.setNeonUser)
+  const authUser = useAppState((state) => state.authUser)
+  const setAuthUser = useAppState((state) => state.setAuthUser)
 
   const handleSignOut = async () => {
     await signOutUser()
-    setNeonUser(null)
+    setAuthUser(null)
     window.location.href = "/"
   }
 
@@ -27,21 +26,18 @@ export function AuthStatusCard() {
               Auth status
             </Typography>
             <Typography color="text.secondary">
-              Signed in via Firebase Auth. Active role: {session?.role ?? "none"}
+              Signed in via Firebase Auth. Patient and provider are demo workspaces.
             </Typography>
           </div>
 
           <Alert severity="info">
-            {neonUser
-              ? `Signed in as ${neonUser.name} (${neonUser.email})`
+            {authUser
+              ? `Signed in as ${authUser.name} (${authUser.email})`
               : "Not signed in"}
-            {" · "}Active role: {session?.role ?? "none"}
+            {session ? ` · Backend session: ${session.email}` : ""}
           </Alert>
 
           <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
-            <Button variant="outlined" onClick={() => switchRole.mutate("patient")}>Use patient role</Button>
-            <Button variant="outlined" onClick={() => switchRole.mutate("provider")}>Use provider role</Button>
-            <Button variant="text" onClick={() => switchRole.mutate(undefined)}>Clear role</Button>
             <Button variant="text" color="error" onClick={handleSignOut}>Sign out</Button>
           </Stack>
         </Stack>

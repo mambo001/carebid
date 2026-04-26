@@ -11,22 +11,25 @@ import {
   ListItemText,
   Skeleton,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 
 import { useAcceptBidMutation, useOpenRequestMutation, useRoomSnapshotQuery } from "../../../lib/queries"
 import { useRoomSocket } from "../../../lib/use-room-socket"
 import { useAppState } from "../../context"
 import { ProviderBidCard } from "./provider-bid-card"
+import { getRoomWorkspaceControls, type RoomWorkspace } from "./room-workspace"
 
 const requestStatus = (tag: string) => tag.replace("Request", "").toLowerCase()
 
 export function RequestRoomPage() {
   const { requestId = "unknown" } = useParams()
   const setLastVisitedRequestId = useAppState((state) => state.setLastVisitedRequestId)
-  const activeRole = useAppState((state) => state.activeRole)
+  const [workspace, setWorkspace] = useState<RoomWorkspace>("provider")
   const roomQuery = useRoomSnapshotQuery(requestId)
   const acceptBid = useAcceptBidMutation(requestId)
   const openRequest = useOpenRequestMutation()
@@ -36,6 +39,7 @@ export function RequestRoomPage() {
   const request = roomQuery.data?.request
   const bids = request?._tag === "OpenRequest" || request?._tag === "AwardedRequest" ? request.bids : []
   const status = request ? requestStatus(request._tag) : undefined
+  const controls = request ? getRoomWorkspaceControls(workspace, request._tag) : undefined
 
   useEffect(() => {
     setLastVisitedRequestId(requestId)
@@ -44,7 +48,7 @@ export function RequestRoomPage() {
   return (
     <Stack spacing={3}>
       <Alert severity="info">
-        This room streams live snapshots from the backend over server-sent events.
+        This room streams live snapshots from the backend. The workspace switch is demo-only and does not change your account.
       </Alert>
 
       <div>
@@ -57,6 +61,30 @@ export function RequestRoomPage() {
           </Stack>
         )}
       </div>
+
+      <Card elevation={0} sx={{ borderRadius: 4 }}>
+        <CardContent>
+          <Stack spacing={1.5}>
+            <Typography variant="h6" fontWeight={700}>Demo workspace</Typography>
+            <Typography color="text.secondary">
+              Switch how this room is rendered without changing backend session state.
+            </Typography>
+            <ToggleButtonGroup
+              exclusive
+              value={workspace}
+              onChange={(_, nextWorkspace: RoomWorkspace | null) => {
+                if (nextWorkspace) {
+                  setWorkspace(nextWorkspace)
+                }
+              }}
+              aria-label="Room workspace"
+            >
+              <ToggleButton value="patient">Patient</ToggleButton>
+              <ToggleButton value="provider">Provider</ToggleButton>
+            </ToggleButtonGroup>
+          </Stack>
+        </CardContent>
+      </Card>
 
       <Card elevation={0} sx={{ borderRadius: 4 }}>
         <CardContent>
@@ -79,7 +107,7 @@ export function RequestRoomPage() {
                       PHP {(entry.amount / 100).toLocaleString()}
                     </Typography>
                     {request?._tag === "AwardedRequest" && request.awardedBidId === entry.id && <Chip label="Accepted" color="success" />}
-                    {activeRole === "patient" && request?._tag === "OpenRequest" && (
+                    {controls?.canAcceptBid && (
                       <Button
                         size="small"
                         variant="outlined"
@@ -97,7 +125,7 @@ export function RequestRoomPage() {
               <Alert severity="warning">No bids in this room yet.</Alert>
             )}
 
-            {activeRole === "patient" && request?._tag === "DraftRequest" && (
+            {controls?.canOpenRequest && (
               <Button
                 variant="contained"
                 disabled={openRequest.isPending}
@@ -110,7 +138,7 @@ export function RequestRoomPage() {
         </CardContent>
       </Card>
 
-      {activeRole === "provider" && request?._tag === "OpenRequest" && <ProviderBidCard requestId={requestId} />}
+      {controls?.canPlaceBid && <ProviderBidCard requestId={requestId} />}
     </Stack>
   )
 }

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "./api"
-import type { AcceptBidInput, BidInput, CreateRequestInput, ViewerRole } from "./api"
+import type { AcceptBidInput, BidInput, CreateRequestInput } from "./api"
 
 export const requestKeys = {
   all: ["requests"] as const,
@@ -34,31 +34,6 @@ export const useSessionQuery = (enabled = true) =>
     queryFn: api.getSession,
     enabled,
   })
-
-export const useSwitchRoleMutation = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (role: ViewerRole | undefined) => api.switchRole(role),
-    onSuccess: (data) => {
-      queryClient.setQueryData(requestKeys.session, data)
-    },
-  })
-}
-
-export const usePatientOnboardingMutation = () => {
-  return useMutation({
-    mutationFn: (_input: unknown) =>
-      Promise.reject(new Error("Patient onboarding is not supported by the current backend API")),
-  })
-}
-
-export const useProviderOnboardingMutation = () => {
-  return useMutation({
-    mutationFn: (_input: unknown) =>
-      Promise.reject(new Error("Provider onboarding is not supported by the current backend API")),
-  })
-}
 
 export const useCreateRequestMutation = () => {
   const queryClient = useQueryClient()

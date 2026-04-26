@@ -25,7 +25,7 @@ const required = (value: unknown) => (value ? undefined : "Required")
 
 export function SignInPage() {
   const navigate = useNavigate()
-  const setNeonUser = useAppState((state) => state.setNeonUser)
+  const setAuthUser = useAppState((state) => state.setAuthUser)
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (values: SignInValues) => {
@@ -34,7 +34,7 @@ export function SignInPage() {
       const user = await signInUser(values.email, values.password)
 
       if (user) {
-        setNeonUser({
+        setAuthUser({
           id: user.id,
           email: user.email,
           name: user.name,

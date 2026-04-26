@@ -203,18 +203,6 @@ export const api = {
     return decodeJson(SessionResponseSchema, response)
   },
 
-  async switchRole(role: ViewerRole | undefined) {
-    const response = await authedFetch(`${apiBaseUrl}/api/session/role`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ role }),
-    })
-
-    return decodeJson(SessionResponseSchema, response)
-  },
-
   async getRoomSnapshot(requestId: string) {
     const response = await authedFetch(`${apiBaseUrl}/api/requests/${requestId}/room`)
 

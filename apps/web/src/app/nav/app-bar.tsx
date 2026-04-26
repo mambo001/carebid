@@ -8,12 +8,12 @@ import { APP_NAME, primaryNavigation } from "../contants"
 
 export function AppBar() {
   const navigate = useNavigate()
-  const neonUser = useAppState((state) => state.neonUser)
-  const setNeonUser = useAppState((state) => state.setNeonUser)
+  const authUser = useAppState((state) => state.authUser)
+  const setAuthUser = useAppState((state) => state.setAuthUser)
 
   const handleSignOut = async () => {
     await signOutUser()
-    setNeonUser(null)
+    setAuthUser(null)
     navigate("/")
   }
 
@@ -32,7 +32,7 @@ export function AppBar() {
               </Button>
             ))}
           </Stack>
-          {neonUser ? (
+          {authUser ? (
             <Button color="inherit" onClick={handleSignOut} size="small">
               Sign out
             </Button>

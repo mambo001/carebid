@@ -1,12 +1,14 @@
 # CareBid Web
 
-The web app is the React frontend for CareBid. It signs users in with Firebase Auth, calls the backend API with the current ID token, and renders patient and provider request workflows.
+The web app is the React frontend for CareBid. It signs users in with Firebase Auth, calls the backend API with the current ID token, and renders patient and provider demo workspaces.
 
 ## Responsibilities
 
 - Connect to the Firebase Auth Emulator in local development.
 - Attach Firebase ID tokens to backend API calls.
 - Decode backend responses at `src/lib/api.ts` with local Effect schemas.
+- Treat the backend session as signed-in identity, not as a persistent UI role toggle.
+- Let one signed-in demo user move between patient and provider workspaces.
 - Render request variants returned by the backend: `DraftRequest`, `OpenRequest`, and `AwardedRequest`.
 - Keep request list and room queries fresh after create, open, bid, and accept actions.
 
@@ -17,7 +19,6 @@ The web app is the React frontend for CareBid. It signs users in with Firebase A
 The web app currently calls:
 
 - `GET /api/session`
-- `POST /api/session/role`
 - `GET /api/requests`
 - `GET /api/requests/open`
 - `POST /api/requests`
@@ -26,7 +27,16 @@ The web app currently calls:
 - `POST /api/requests/:id/bids`
 - `POST /api/requests/:id/accept`
 
-Request creation submits `{ title, description, category }`. The existing form still collects additional fields for the product flow, but only fields supported by the backend are sent.
+Request creation submits `{ title, description, category }`. The form only collects those currently supported backend fields.
+
+## Workspaces
+
+Patient and provider are demo workspaces, not separate frontend account states.
+
+- `/patient` renders the request creation and patient request list workspace.
+- `/provider` renders the provider discovery workspace.
+- Request rooms include a demo-only workspace switch so the same signed-in user can exercise patient and provider room actions.
+- Switching workspaces does not call `POST /api/session/role` and does not mutate backend session state.
 
 ## Room Updates
 
@@ -36,4 +46,4 @@ Room leaderboards are derived from `request.bids` for `OpenRequest` and `Awarded
 
 ## Not Provided
 
-The current backend does not provide onboarding, bid withdrawal, or request expiry endpoints. The web app leaves onboarding controls disabled through unsupported mutations and does not render withdrawal or expiry controls in active request flows.
+The current backend does not provide onboarding, bid withdrawal, or request expiry endpoints. The web app does not render onboarding, withdrawal, or expiry controls in active request flows.
