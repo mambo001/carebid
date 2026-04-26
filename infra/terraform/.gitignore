@@ -1,0 +1,7 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+# !environments/*.tfvars
+# .terraform.lock.hcl is committed to lock provider versions
