@@ -26,5 +26,10 @@ output "firebase_auth_domain" {
 
 output "firebase_project_id" {
   description = "Firebase project ID"
-  value       = var.firebase_project_id
+  value       = var.gcp_project_id
+}
+
+output "firebase_hosting_url" {
+  description = "Firebase Hosting URL for the web app"
+  value       = "https://${google_firebase_hosting_site.web.site_id}.web.app"
 }

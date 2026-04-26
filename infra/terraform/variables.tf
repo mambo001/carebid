@@ -15,11 +15,6 @@ variable "neon_api_key" {
   sensitive   = true
 }
 
-variable "firebase_project_id" {
-  description = "Firebase project ID (may differ from GCP project ID)"
-  type        = string
-}
-
 variable "allowed_origins" {
   description = "Comma-separated list of allowed CORS origins for the backend"
   type        = string

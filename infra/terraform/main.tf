@@ -22,6 +22,11 @@ resource "google_project_service" "firebase" {
   service = "firebase.googleapis.com"
 }
 
+resource "google_project_service" "firebasehosting" {
+  project = var.gcp_project_id
+  service = "firebasehosting.googleapis.com"
+}
+
 resource "google_project_service" "identitytoolkit" {
   project = var.gcp_project_id
   service = "identitytoolkit.googleapis.com"
@@ -39,6 +44,8 @@ resource "google_project_service" "iam" {
 resource "google_firebase_project" "default" {
   provider = google-beta
   project  = var.gcp_project_id
+
+  depends_on = [google_project_service.firebase]
 }
 
 resource "google_firebase_web_app" "default" {
@@ -47,6 +54,17 @@ resource "google_firebase_web_app" "default" {
   display_name = "CareBid Web"
 
   depends_on = [google_firebase_project.default]
+}
+
+resource "google_firebase_hosting_site" "web" {
+  provider = google-beta
+  project  = var.gcp_project_id
+  site_id  = var.gcp_project_id
+
+  depends_on = [
+    google_firebase_project.default,
+    google_project_service.firebasehosting,
+  ]
 }
 
 data "google_firebase_web_app_config" "default" {
@@ -183,7 +201,7 @@ resource "google_cloud_run_v2_service" "backend" {
 
       env {
         name  = "FIREBASE_PROJECT_ID"
-        value = var.firebase_project_id
+        value = var.gcp_project_id
       }
 
       env {

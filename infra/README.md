@@ -34,7 +34,11 @@ terraform apply -var-file=environments/dev.tfvars
 
 ## Deployment After Apply
 
+Run these commands from the repository root.
+
 ```bash
+GCP_PROJECT=$(terraform -chdir=infra/terraform output -raw firebase_project_id)
+
 # Build the backend Docker image
 docker build -t carebid-backend -f apps/backend/Dockerfile .
 
@@ -49,12 +53,12 @@ gcloud auth configure-docker $(terraform -chdir=infra/terraform output -raw arti
 docker push $(terraform -chdir=infra/terraform output -raw artifact_registry_repo)/carebid-backend:latest
 
 # Prisma schema push against the provisioned Neon database.
-# DATABASE_URL is stored in Secret Manager; retrieve it or use the Neon dashboard.
-bun run db:push
+# Reads DATABASE_URL from Secret Manager into the command environment without printing it.
+DATABASE_URL=$(gcloud secrets versions access latest --secret=carebid-database-url --project="$GCP_PROJECT") bun run db:push
 
 # Add the Redis URL manually after you create the free-tier Redis instance.
 # Replace REDIS_URL with the value from the Redis console.
-printf '%s' "$REDIS_URL" | gcloud secrets versions add carebid-redis-url --data-file=-
+printf '%s' "$REDIS_URL" | gcloud secrets versions add carebid-redis-url --data-file=- --project="$GCP_PROJECT"
 ```
 
 ## Redis Setup (Manual)
@@ -70,16 +74,49 @@ printf '%s' "$REDIS_URL" | gcloud secrets versions add carebid-redis-url --data-
 4. Add it to Secret Manager:
 
    ```bash
-   printf '%s' "$REDIS_URL" | gcloud secrets versions add carebid-redis-url --data-file=-
+   GCP_PROJECT=$(terraform -chdir=infra/terraform output -raw firebase_project_id)
+   printf '%s' "$REDIS_URL" | gcloud secrets versions add carebid-redis-url --data-file=- --project="$GCP_PROJECT"
    ```
 
 5. Verify the secret was stored:
 
    ```bash
-   gcloud secrets versions access latest --secret=carebid-redis-url
+   GCP_PROJECT=$(terraform -chdir=infra/terraform output -raw firebase_project_id)
+   gcloud secrets versions list carebid-redis-url --limit=1 --project="$GCP_PROJECT"
    ```
 
 6. Re-deploy or refresh Cloud Run so the service picks up the secret value.
+
+## Web Deployment
+
+Terraform provisions the Firebase Hosting site and emits the production web build
+configuration. Export those values before building the web app:
+
+```bash
+cd infra/terraform
+export VITE_API_BASE_URL=$(terraform output -raw backend_url)
+export VITE_FIREBASE_API_KEY=$(terraform output -raw firebase_api_key)
+export VITE_FIREBASE_AUTH_DOMAIN=$(terraform output -raw firebase_auth_domain)
+export VITE_FIREBASE_PROJECT_ID=$(terraform output -raw firebase_project_id)
+export VITE_FIREBASE_APP_ID=$(terraform output -raw firebase_app_id)
+cd ../..
+bun run --filter @carebid/web build
+npx firebase-tools deploy --only hosting --project "$VITE_FIREBASE_PROJECT_ID"
+```
+
+The explicit build command is useful for verifying the production bundle before
+deployment. `firebase deploy` also runs the `firebase.json` predeploy build.
+The `.firebaserc` default project is a convenience for `carebid-demo`; passing
+`--project` from Terraform output is safer for production deploys.
+
+After Terraform outputs `firebase_hosting_url`, add that origin to
+`allowed_origins` in `infra/terraform/environments/dev.tfvars` and re-apply
+Terraform:
+
+```bash
+cd infra/terraform
+terraform apply -var-file=environments/dev.tfvars
+```
 
 ## What Terraform Creates
 
@@ -87,6 +124,7 @@ printf '%s' "$REDIS_URL" | gcloud secrets versions add carebid-redis-url --data-
 - Cloud Run service running the backend on port 8080
 - Secret Manager secrets for `DATABASE_URL` and `REDIS_URL`
 - Firebase project and web app
+- Firebase Hosting site for the web app
 - Neon Postgres project, branch, and database
 - Service account for the Cloud Run service
 - IAM bindings for secret access and public Cloud Run invocation
@@ -97,7 +135,7 @@ printf '%s' "$REDIS_URL" | gcloud secrets versions add carebid-redis-url --data-
 - Build or push backend container images
 - Configure Firebase sign-in providers
 - Configure Firebase authorized domains
-- Deploy the web frontend
+- Upload Firebase Hosting static assets
 - Provision Redis infrastructure
 
 ## Tearing Down
