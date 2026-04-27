@@ -91,6 +91,25 @@ Why this fits:
 - clear separation between static web assets and backend API
 - easy auth integration with Firebase
 
+### Free-Tier-Oriented Cloud Stack
+
+This demo intentionally uses services with practical free tiers:
+
+- Cloud Run for the backend API
+- Firebase Hosting for static web deployment
+- Firebase Auth for signup and login
+- Neon free tier for Postgres
+- Redis Cloud free tier for pub/sub
+
+Why this fits:
+
+- keeps the demo inexpensive to run
+- shows real cloud integration without requiring paid infrastructure upfront
+- exercises managed services across auth, compute, database, pub/sub, and hosting
+
+Tradeoff:
+This is a good demo stack, not necessarily the stack I would choose unchanged for a production product. For production, I would likely consolidate more of the architecture into a GCP-native setup to reduce vendor spread, simplify IAM/networking, and centralize operations. Neon and Redis Cloud are useful here because their free tiers make the demo accessible.
+
 ### Redis for Room Fanout
 
 Redis is only used as a pub/sub bridge for room updates.
