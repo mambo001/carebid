@@ -51,6 +51,11 @@ Repository secrets:
 - `VITE_FIREBASE_API_KEY`: Firebase web app API key.
 - `VITE_FIREBASE_APP_ID`: Firebase web app ID.
 
+Required deployer service account:
+
+- `github-actions-deployer@${GCP_PROJECT_ID}.iam.gserviceaccount.com`
+- Must have `roles/iam.serviceAccountUser` on `carebid-backend@${GCP_PROJECT_ID}.iam.gserviceaccount.com`
+
 Repository variables:
 
 - `GCP_PROJECT_ID`: GCP/Firebase project ID, for example `carebid-demo`.

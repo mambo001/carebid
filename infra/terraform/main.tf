@@ -139,6 +139,12 @@ resource "google_service_account" "backend" {
   display_name = "CareBid Backend Cloud Run Service Account"
 }
 
+resource "google_service_account_iam_member" "backend_act_as" {
+  service_account_id = google_service_account.backend.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:github-actions-deployer@${var.gcp_project_id}.iam.gserviceaccount.com"
+}
+
 # ============================================================================
 # Secret Manager
 # ============================================================================
