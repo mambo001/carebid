@@ -36,9 +36,40 @@ terraform apply -var-file=environments/dev.tfvars
 4. Update `backend_image` in `environments/dev.tfvars` to the pushed image.
 5. Run `terraform apply -var-file=environments/dev.tfvars` again.
 
-## Deployment After Apply
+## GitHub Actions Deployment
 
-Run these commands from the repository root.
+Pushes to `master` run two deployment workflows:
+
+- `.github/workflows/backend-deploy.yml` builds `apps/backend/Dockerfile`, pushes the image to Artifact Registry, and deploys Cloud Run.
+- `.github/workflows/web-deploy.yml` builds the Vite web app and deploys Firebase Hosting.
+
+Configure these GitHub repository settings before relying on the workflows:
+
+Repository secrets:
+
+- `GCP_SA_KEY`: JSON key for a service account that can push Artifact Registry images, deploy Cloud Run, read Secret Manager secret metadata, and deploy Firebase Hosting.
+- `VITE_FIREBASE_API_KEY`: Firebase web app API key.
+- `VITE_FIREBASE_APP_ID`: Firebase web app ID.
+
+Repository variables:
+
+- `GCP_PROJECT_ID`: GCP/Firebase project ID, for example `carebid-demo`.
+- `GCP_REGION`: GCP region, for example `us-central1`.
+- `ALLOWED_ORIGINS`: Comma-separated browser origins allowed by the backend, for example `https://carebid-demo.web.app`.
+- `VITE_API_BASE_URL`: Optional. If omitted, the web workflow reads the current Cloud Run service URL.
+- `VITE_FIREBASE_AUTH_DOMAIN`: Optional. If omitted, the web workflow uses `${GCP_PROJECT_ID}.firebaseapp.com`.
+
+The backend workflow deploys these runtime settings to Cloud Run:
+
+- `NODE_ENV=production`
+- `FIREBASE_PROJECT_ID=${GCP_PROJECT_ID}`
+- `ALLOWED_ORIGINS=${ALLOWED_ORIGINS}`
+- `DATABASE_URL` from Secret Manager secret `carebid-database-url:latest`
+- `REDIS_URL` from Secret Manager secret `carebid-redis-url:latest`
+
+## Manual Deployment Fallback
+
+Use these commands from the repository root only when you need to bypass GitHub Actions.
 
 ```bash
 GCP_PROJECT=$(terraform -chdir=infra/terraform output -raw firebase_project_id)
