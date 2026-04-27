@@ -67,6 +67,22 @@ resource "google_firebase_hosting_site" "web" {
   ]
 }
 
+resource "google_identity_platform_config" "default" {
+  project = var.gcp_project_id
+
+  sign_in {
+    email {
+      enabled           = true
+      password_required = true
+    }
+  }
+
+  depends_on = [
+    google_firebase_project.default,
+    google_project_service.identitytoolkit,
+  ]
+}
+
 data "google_firebase_web_app_config" "default" {
   provider   = google-beta
   web_app_id = google_firebase_web_app.default.app_id

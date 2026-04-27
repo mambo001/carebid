@@ -17,7 +17,7 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-const authEmulatorUrl = import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_URL
+const authEmulatorUrl = import.meta.env.DEV ? import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_URL : undefined
 
 const authTokenStorageKey = "carebid.auth-token"
 let authEmulatorConnected = false

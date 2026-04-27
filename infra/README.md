@@ -12,6 +12,10 @@ Terraform-based infrastructure for the CareBid backend on GCP.
 ## Quick Start
 
 ```bash
+gcloud auth application-default login
+gcloud auth application-default set-quota-project carebid-demo
+export GOOGLE_CLOUD_QUOTA_PROJECT=carebid-demo
+
 cd infra/terraform
 
 # Initialize Terraform
@@ -90,7 +94,8 @@ printf '%s' "$REDIS_URL" | gcloud secrets versions add carebid-redis-url --data-
 ## Web Deployment
 
 Terraform provisions the Firebase Hosting site and emits the production web build
-configuration. Export those values before building the web app:
+configuration. The production web build script reads those values directly from
+Terraform outputs so local emulator values in `apps/web/.env` are not deployed.
 
 Authenticate the Firebase CLI before deploying:
 
@@ -100,19 +105,14 @@ npx firebase-tools login --reauth
 ```
 
 ```bash
-cd infra/terraform
-export VITE_API_BASE_URL=$(terraform output -raw backend_url)
-export VITE_FIREBASE_API_KEY=$(terraform output -raw firebase_api_key)
-export VITE_FIREBASE_AUTH_DOMAIN=$(terraform output -raw firebase_auth_domain)
-export VITE_FIREBASE_PROJECT_ID=$(terraform output -raw firebase_project_id)
-export VITE_FIREBASE_APP_ID=$(terraform output -raw firebase_app_id)
-cd ../..
-bun run --filter @carebid/web build
-npx firebase-tools deploy --only hosting --project "$VITE_FIREBASE_PROJECT_ID"
+bash scripts/build-web-production.sh
+FIREBASE_PROJECT=$(terraform -chdir=infra/terraform output -raw firebase_project_id)
+npx firebase-tools deploy --only hosting --project "$FIREBASE_PROJECT"
 ```
 
 The explicit build command is useful for verifying the production bundle before
-deployment. `firebase deploy` also runs the `firebase.json` predeploy build.
+deployment. `firebase deploy` also runs the same script through the `firebase.json`
+predeploy hook.
 `firebase.json` pins Hosting to the `carebid-demo` site. If `gcp_project_id`
 changes, update `hosting.site` to the Terraform-managed Firebase Hosting site ID
 before deploying.
@@ -134,6 +134,7 @@ terraform apply -var-file=environments/dev.tfvars
 - Cloud Run service running the backend on port 8080
 - Secret Manager secrets for `DATABASE_URL` and `REDIS_URL`
 - Firebase project and web app
+- Firebase Auth Email/Password sign-in configuration
 - Firebase Hosting site for the web app
 - Neon Postgres project, branch, and database
 - Service account for the Cloud Run service
@@ -143,7 +144,6 @@ terraform apply -var-file=environments/dev.tfvars
 
 - Run Prisma migrations or manage database schema
 - Build or push backend container images
-- Configure Firebase sign-in providers
 - Configure Firebase authorized domains
 - Upload Firebase Hosting static assets
 - Provision Redis infrastructure
