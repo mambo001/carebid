@@ -206,6 +206,14 @@ resource "google_cloud_run_v2_service" "backend" {
   location = var.gcp_region
   ingress  = "INGRESS_TRAFFIC_ALL"
 
+  lifecycle {
+    ignore_changes = [
+      client,
+      client_version,
+      template[0].containers[0].image,
+    ]
+  }
+
   template {
     service_account = google_service_account.backend.email
 
