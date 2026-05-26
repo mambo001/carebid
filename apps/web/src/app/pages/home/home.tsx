@@ -1,5 +1,6 @@
 import React from "react"
 import {
+  Box,
   Button,
   Card,
   CardContent,
@@ -21,60 +22,88 @@ export function HomePage() {
 
   return (
     <Stack spacing={4}>
-      <Stack spacing={2}>
-        <Typography variant="overline" color="primary.main">
-          Reverse-bid healthcare marketplace demo
-        </Typography>
-        <Typography variant="h1" sx={{ maxWidth: 720 }}>
-          Patients post care requests. Providers compete with price and availability.
-        </Typography>
-        <Typography variant="h3" color="text.secondary" sx={{ maxWidth: 680 }}>
-          CareBid focuses the first demo on specialist consults and imaging, with real-time bidding rooms backed by server-sent events.
-        </Typography>
-      </Stack>
+      <Card elevation={0}>
+        <CardContent sx={{ p: { xs: 3, md: 5 } }}>
+          <Stack spacing={3}>
+            <Stack spacing={2}>
+              <Chip
+                label="Reverse-bid healthcare marketplace demo"
+                color="secondary"
+                variant="outlined"
+                sx={{ alignSelf: "start", bgcolor: "background.paper" }}
+              />
+              <Typography variant="h1" sx={{ maxWidth: 780 }}>
+                Patients post care requests. Providers compete with price and availability.
+              </Typography>
+              <Typography variant="h3" color="text.secondary" sx={{ maxWidth: 680 }}>
+                CareBid focuses the demo on specialist consults and imaging, with authenticated workflows, Postgres persistence, and live bidding rooms.
+              </Typography>
+            </Stack>
 
-      {isAuthenticated ? (
-        <>
-          <Stack direction="row" spacing={2}>
-            <Button component={RouterLink} to="/patient" variant="contained" size="large">
-              Enter patient workspace
-            </Button>
-            <Button component={RouterLink} to="/provider" variant="outlined" size="large">
-              Enter provider workspace
-            </Button>
-          </Stack>
-
-          <AuthStatusCard />
-
-          <Card elevation={0} sx={{ borderRadius: 4 }}>
-            <CardContent>
-              <Stack spacing={1}>
-                <Typography variant="h2">Demo profiles are ready</Typography>
-                <Typography color="text.secondary">
-                  The backend automatically creates patient and provider demo profiles for each signed-in Firebase user. Use the workspace links above to move between request creation and provider bidding.
-                </Typography>
+            {isAuthenticated ? (
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <Button component={RouterLink} to="/patient" variant="contained" size="large">
+                  Enter patient workspace
+                </Button>
+                <Button component={RouterLink} to="/provider" variant="outlined" size="large">
+                  Enter provider workspace
+                </Button>
               </Stack>
-            </CardContent>
-          </Card>
-        </>
-      ) : (
-        <Stack direction="row" spacing={2}>
-          <Button component={RouterLink} to="/sign-in" variant="contained" size="large">
-            Sign in
-          </Button>
-          <Button component={RouterLink} to="/sign-up" variant="outlined" size="large">
-            Create account
-          </Button>
-        </Stack>
+            ) : (
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <Button component={RouterLink} to="/sign-in" variant="contained" size="large">
+                  Sign in
+                </Button>
+                <Button component={RouterLink} to="/sign-up" variant="outlined" size="large">
+                  Create account
+                </Button>
+              </Stack>
+            )}
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {isAuthenticated && (
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 5 }}>
+            <AuthStatusCard />
+          </Grid>
+          <Grid size={{ xs: 12, md: 7 }}>
+            <Card elevation={0} sx={{ height: "100%" }}>
+              <CardContent sx={{ height: "100%" }}>
+                <Stack spacing={1} justifyContent="center" sx={{ height: "100%" }}>
+                  <Typography variant="h2">Demo profiles are ready</Typography>
+                  <Typography color="text.secondary">
+                    The backend automatically creates patient and provider demo profiles for each signed-in Firebase user. Use the workspaces to move between request creation, provider bidding, and award selection.
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       )}
+
+      <Box>
+        <Stack spacing={1} sx={{ mb: 2 }}>
+          <Typography variant="overline" color="primary.main">
+            Demo coverage
+          </Typography>
+          <Typography variant="h2">Marketplace request types</Typography>
+        </Stack>
+      </Box>
 
       <Grid container spacing={3}>
         {providerCategories.map((category) => (
           <Grid key={category} size={{ xs: 12, md: 6 }}>
-            <Card elevation={0} sx={{ borderRadius: 4 }}>
-              <CardContent>
+            <Card elevation={0} sx={{ height: "100%" }}>
+              <CardContent sx={{ height: "100%" }}>
                 <Stack spacing={2}>
-                  <Chip label={category.replaceAll("_", " ")} sx={{ alignSelf: "start" }} />
+                  <Chip
+                    label={category.replaceAll("_", " ")}
+                    color="secondary"
+                    variant="outlined"
+                    sx={{ alignSelf: "start" }}
+                  />
                   <Typography variant="h2">
                     {category === "specialist_consult" ? "Specialist consult marketplace" : "Imaging quote marketplace"}
                   </Typography>

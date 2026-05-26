@@ -18,7 +18,7 @@ export function AuthStatusCard() {
   }
 
   return (
-    <Card elevation={0} sx={{ borderRadius: 4 }}>
+    <Card elevation={0}>
       <CardContent>
         <Stack spacing={2}>
           <div>

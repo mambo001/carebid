@@ -57,7 +57,7 @@ export function SignUpPage() {
         </Typography>
       </Stack>
 
-      <Card elevation={0} sx={{ borderRadius: 4, width: "100%", maxWidth: 400 }}>
+      <Card elevation={0} sx={{ width: "100%", maxWidth: 400 }}>
         <CardContent>
           <Form<SignUpValues>
             onSubmit={handleSubmit}
