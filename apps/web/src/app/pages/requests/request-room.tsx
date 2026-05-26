@@ -168,7 +168,7 @@ export function RequestRoomPage() {
                         </Typography>
                         {entry.notes && (
                           <Typography component="span" variant="body2" color="text.secondary">
-                            &middot; {entry.notes}
+                            &middot; Notes: {entry.notes}
                           </Typography>
                         )}
                       </Stack>
