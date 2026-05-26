@@ -20,26 +20,18 @@ export function AuthStatusCard() {
   return (
     <Card elevation={0}>
       <CardContent>
-        <Stack spacing={2}>
-          <div>
-            <Typography variant="h6" fontWeight={700}>
-              Auth status
-            </Typography>
-            <Typography color="text.secondary">
-              Signed in via Firebase Auth. Patient and provider are demo workspaces.
-            </Typography>
-          </div>
-
+        <Stack spacing={1.5}>
+          <Typography variant="h3">
+            {authUser ? authUser.name : "Not signed in"}
+          </Typography>
           <Alert severity="info">
             {authUser
-              ? `Signed in as ${authUser.name} (${authUser.email})`
+              ? `${authUser.email}${session ? ` · Backend session verified` : ""}`
               : "Not signed in"}
-            {session ? ` · Backend session: ${session.email}` : ""}
           </Alert>
-
-          <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
-            <Button variant="text" color="error" onClick={handleSignOut}>Sign out</Button>
-          </Stack>
+          <Button variant="text" color="error" onClick={handleSignOut} size="small">
+            Sign out
+          </Button>
         </Stack>
       </CardContent>
     </Card>

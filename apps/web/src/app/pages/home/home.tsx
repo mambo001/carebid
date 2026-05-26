@@ -1,6 +1,5 @@
 import React from "react"
 import {
-  Box,
   Button,
   Card,
   CardContent,
@@ -23,30 +22,27 @@ export function HomePage() {
   return (
     <Stack spacing={4}>
       <Card elevation={0}>
-        <CardContent sx={{ p: { xs: 3, md: 5 } }}>
-          <Stack spacing={3}>
-            <Stack spacing={2}>
-              <Chip
-                label="Reverse-bid healthcare marketplace demo"
-                color="secondary"
-                variant="outlined"
-                sx={{ alignSelf: "start", bgcolor: "background.paper" }}
-              />
-              <Typography variant="h1" sx={{ maxWidth: 780 }}>
-                Patients post care requests. Providers compete with price and availability.
-              </Typography>
-              <Typography variant="h3" color="text.secondary" sx={{ maxWidth: 680 }}>
-                CareBid focuses the demo on specialist consults and imaging, with authenticated workflows, Postgres persistence, and live bidding rooms.
-              </Typography>
-            </Stack>
-
+        <CardContent>
+          <Stack spacing={2}>
+            <Chip
+              label="Reverse-bid marketplace demo"
+              color="secondary"
+              variant="outlined"
+              sx={{ alignSelf: "start" }}
+            />
+            <Typography variant="h1" sx={{ maxWidth: 780 }}>
+              Patients post care requests. Providers compete with price and availability.
+            </Typography>
+            <Typography variant="h3" color="text.secondary" sx={{ maxWidth: 680 }}>
+              Specialist consults and imaging with authenticated workflows, Postgres persistence, and live bidding rooms.
+            </Typography>
             {isAuthenticated ? (
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <Button component={RouterLink} to="/patient" variant="contained" size="large">
-                  Enter patient workspace
+                  Patient workspace
                 </Button>
                 <Button component={RouterLink} to="/provider" variant="outlined" size="large">
-                  Enter provider workspace
+                  Provider workspace
                 </Button>
               </Stack>
             ) : (
@@ -65,29 +61,16 @@ export function HomePage() {
 
       {isAuthenticated && <AuthStatusCard />}
 
-      <Box>
-        <Stack spacing={1} sx={{ mb: 2 }}>
-          <Typography variant="overline" color="primary.main">
-            Demo coverage
-          </Typography>
-          <Typography variant="h2">Marketplace request types</Typography>
-        </Stack>
-      </Box>
+      <Typography variant="h2">Marketplace request types</Typography>
 
       <Grid container spacing={3}>
         {providerCategories.map((category) => (
           <Grid key={category} size={{ xs: 12, md: 6 }}>
             <Card elevation={0} sx={{ height: "100%" }}>
-              <CardContent sx={{ height: "100%" }}>
-                <Stack spacing={2}>
-                  <Chip
-                    label={category.replaceAll("_", " ")}
-                    color="secondary"
-                    variant="outlined"
-                    sx={{ alignSelf: "start" }}
-                  />
-                  <Typography variant="h2">
-                    {category === "specialist_consult" ? "Specialist consult marketplace" : "Imaging quote marketplace"}
+              <CardContent>
+                <Stack spacing={1.5}>
+                  <Typography variant="h3">
+                    {category === "specialist_consult" ? "Specialist consult" : "Imaging quote"}
                   </Typography>
                   <Typography color="text.secondary">
                     {category === "specialist_consult"
