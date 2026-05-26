@@ -13,7 +13,6 @@ import { Link as RouterLink } from "react-router-dom"
 import { providerCategories } from "@carebid/shared"
 
 import { useAppState } from "../../context/app-state"
-import { AuthStatusCard } from "./auth-status-card"
 
 export function HomePage() {
   const authUser = useAppState((state) => state.authUser)
@@ -58,8 +57,6 @@ export function HomePage() {
           </Stack>
         </CardContent>
       </Card>
-
-      {isAuthenticated && <AuthStatusCard />}
 
       <Typography variant="h2">Marketplace request types</Typography>
 

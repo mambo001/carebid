@@ -1,5 +1,5 @@
 import React from "react"
-import { AppBar as MuiAppBar, Box, Button, Stack, Toolbar, Typography } from "@mui/material"
+import { AppBar as MuiAppBar, Box, Button, Divider, Stack, Toolbar, Typography } from "@mui/material"
 import { NavLink, useNavigate } from "react-router-dom"
 
 import { signOutUser } from "../../lib/auth"
@@ -45,9 +45,15 @@ export function AppBar() {
             ))}
           </Stack>
           {authUser ? (
-            <Button color="primary" onClick={handleSignOut} size="small" variant="outlined">
-              Sign out
-            </Button>
+            <>
+              <Divider orientation="vertical" flexItem variant="middle" />
+              <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 160 }}>
+                {authUser.name}
+              </Typography>
+              <Button color="primary" onClick={handleSignOut} size="small" variant="outlined">
+                Sign out
+              </Button>
+            </>
           ) : (
             <Button component={NavLink} to="/sign-in" color="primary" size="small" variant="contained">
               Sign in
