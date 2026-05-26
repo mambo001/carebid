@@ -1,6 +1,7 @@
 import React from "react"
 import {
   Alert,
+  Box,
   Button,
   Card,
   CardContent,
@@ -20,10 +21,16 @@ export function ProviderDashboardPage() {
 
   return (
     <Stack spacing={3}>
-      <Alert severity="info">Provider filtering is scaffolded. Bidding happens in real-time via server-sent events.</Alert>
-
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "stretch", md: "center" }}
+        spacing={2}
+      >
         <div>
+          <Typography variant="overline" color="primary.main">
+            Provider workspace
+          </Typography>
           <Typography variant="h2">Provider dashboard</Typography>
           <Typography color="text.secondary">
             Review eligible requests and join the live bidding room.
@@ -35,6 +42,8 @@ export function ProviderDashboardPage() {
         </Button>
       </Stack>
 
+      <Alert severity="info">Providers see open requests, place bids through the API, and receive room changes via server-sent events.</Alert>
+
       <Grid container spacing={3}>
         {requestsQuery.isLoading &&
           [0, 1].map((item) => (
@@ -45,18 +54,23 @@ export function ProviderDashboardPage() {
 
         {requests.map((request) => (
           <Grid key={request.id} size={{ xs: 12, md: 6 }}>
-            <Card elevation={0} sx={{ borderRadius: 4 }}>
-              <CardContent>
+            <Card elevation={0} sx={{ height: "100%" }}>
+              <CardContent sx={{ height: "100%" }}>
                 <Stack spacing={2}>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="h6" fontWeight={700}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="h3">
                       {request.title}
                     </Typography>
                     <Chip label="open" color="success" />
                   </Stack>
-                  <Typography color="text.secondary">
-                    {request.category.replaceAll("_", " ")}
-                  </Typography>
+                  <Box>
+                    <Chip
+                      label={request.category.replaceAll("_", " ")}
+                      size="small"
+                      color="secondary"
+                      variant="outlined"
+                    />
+                  </Box>
                   <Typography variant="body2">{request.description}</Typography>
                   <Button component={RouterLink} to={`/requests/${request.id}`} variant="outlined">
                     Join room

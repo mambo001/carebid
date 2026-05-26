@@ -25,16 +25,15 @@ export function PatientRequestFormCard() {
   const initialValues = createInitialRequestValues();
 
   return (
-    <Card elevation={0} sx={{ borderRadius: 4 }}>
+    <Card elevation={0}>
       <CardContent>
         <Stack spacing={3}>
           <div>
-            <Typography variant="h6" fontWeight={700}>
+            <Typography variant="h2">
               Create request
             </Typography>
             <Typography color="text.secondary">
-              Start with a sanitized request. This currently saves into the demo
-              backend flow.
+              Start a request and persist it into the backend workflow.
             </Typography>
           </div>
 
@@ -87,12 +86,13 @@ export function PatientRequestFormCard() {
                       required
                       fieldProps={{ validate: required }}
                       multiline
-                      minRows={3}
+                      minRows={4}
                     />
 
                     <Button
                       type="submit"
                       variant="contained"
+                      size="large"
                       disabled={submitting || createRequest.isPending}
                     >
                       {createRequest.isPending

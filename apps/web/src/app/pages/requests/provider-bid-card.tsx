@@ -33,11 +33,11 @@ export function ProviderBidCard({
   const initialValues = providerBidInitialValues(requestId, existingBid);
 
   return (
-    <Card elevation={0} sx={{ borderRadius: 4 }}>
+    <Card elevation={0}>
       <CardContent>
         <Stack spacing={3}>
           <div>
-            <Typography variant="h6" fontWeight={700}>
+            <Typography variant="h2">
               {existingBid ? "Update provider bid" : "Provider bid controls"}
             </Typography>
             <Typography color="text.secondary">
@@ -84,6 +84,7 @@ export function ProviderBidCard({
                   <Button
                     type="submit"
                     variant="contained"
+                    size="large"
                     disabled={submitting || placeBid.isPending}
                   >
                     {placeBid.isPending

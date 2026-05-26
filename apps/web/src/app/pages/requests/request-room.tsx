@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Alert,
+  Box,
   Button,
   Card,
   CardContent,
@@ -77,31 +78,42 @@ export function RequestRoomPage() {
 
   return (
     <Stack spacing={3}>
-      <Alert severity="info">
-        This room streams live snapshots from the backend. The workspace switch
-        is demo-only and does not change your account.
-      </Alert>
-
-      <div>
-        <Typography variant="h2">Request room</Typography>
-        <Typography color="text.secondary">Request ID: {requestId}</Typography>
-        {request && (
-          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-            <Chip
-              label={`Status: ${status}`}
-              color={request._tag === "OpenRequest" ? "success" : "default"}
-            />
-            {request._tag === "AwardedRequest" && (
-              <Chip label={`Awarded bid: ${request.awardedBidId}`} />
+      <Card elevation={0}>
+        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+          <Stack spacing={2}>
+            <Box>
+              <Typography variant="overline" color="primary.main">
+                Live request room
+              </Typography>
+              <Typography variant="h2">{request?.title ?? "Request room"}</Typography>
+              <Typography color="text.secondary">Request ID: {requestId}</Typography>
+            </Box>
+            {request && (
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                <Chip
+                  label={`Status: ${status}`}
+                  color={request._tag === "OpenRequest" ? "success" : "default"}
+                  variant={request._tag === "DraftRequest" ? "outlined" : "filled"}
+                  sx={{ alignSelf: "start" }}
+                />
+                <Chip label="SSE live updates" color="secondary" variant="outlined" sx={{ alignSelf: "start" }} />
+                {request._tag === "AwardedRequest" && (
+                  <Chip label={`Awarded bid: ${request.awardedBidId}`} color="success" sx={{ alignSelf: "start" }} />
+                )}
+              </Stack>
             )}
           </Stack>
-        )}
-      </div>
+        </CardContent>
+      </Card>
 
-      <Card elevation={0} sx={{ borderRadius: 4 }}>
+      <Alert severity="info">
+        This room streams fresh snapshots from the backend. The workspace switch is demo-only and does not change your account.
+      </Alert>
+
+      <Card elevation={0}>
         <CardContent>
           <Stack spacing={1.5}>
-            <Typography variant="h6" fontWeight={700}>
+            <Typography variant="h2">
               Demo workspace
             </Typography>
             <Typography color="text.secondary">
@@ -125,10 +137,10 @@ export function RequestRoomPage() {
         </CardContent>
       </Card>
 
-      <Card elevation={0} sx={{ borderRadius: 4 }}>
+      <Card elevation={0}>
         <CardContent>
           <Stack spacing={2}>
-            <Typography variant="h6" fontWeight={700}>
+            <Typography variant="h2">
               Current leaderboard
             </Typography>
             {request && (
@@ -138,7 +150,17 @@ export function RequestRoomPage() {
             {roomQuery.isLoading && <Skeleton variant="rounded" height={180} />}
             <List disablePadding>
               {bids.map((entry, index) => (
-                <ListItem key={entry.id} disablePadding sx={{ py: 1.5 }}>
+                <ListItem
+                  key={entry.id}
+                  sx={{
+                    bgcolor: request?._tag === "AwardedRequest" && request.awardedBidId === entry.id ? "rgba(36, 122, 77, 0.08)" : "background.default",
+                    border: 1,
+                    borderColor: request?._tag === "AwardedRequest" && request.awardedBidId === entry.id ? "success.main" : "divider",
+                    mb: 1,
+                    px: 2,
+                    py: 1.5,
+                  }}
+                >
                   <ListItemText
                     primary={`${index + 1}. ${formatProviderDisplayName(entry.providerDisplayName)}`}
                     secondary={`ETA: ${formatETADate(entry.availableDate)}${entry.notes ? ` · ${entry.notes}` : ""}`}
@@ -148,7 +170,7 @@ export function RequestRoomPage() {
                     spacing={1}
                     alignItems={{ md: "center" }}
                   >
-                    <Typography fontWeight={700}>
+                    <Typography fontWeight={900} color="primary.main">
                       {formatBidAmount(entry.amount)}
                     </Typography>
                     {request?._tag === "AwardedRequest" &&
