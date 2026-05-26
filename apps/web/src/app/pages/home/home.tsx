@@ -63,25 +63,7 @@ export function HomePage() {
         </CardContent>
       </Card>
 
-      {isAuthenticated && (
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 5 }}>
-            <AuthStatusCard />
-          </Grid>
-          <Grid size={{ xs: 12, md: 7 }}>
-            <Card elevation={0} sx={{ height: "100%" }}>
-              <CardContent sx={{ height: "100%" }}>
-                <Stack spacing={1} justifyContent="center" sx={{ height: "100%" }}>
-                  <Typography variant="h2">Demo profiles are ready</Typography>
-                  <Typography color="text.secondary">
-                    The backend automatically creates patient and provider demo profiles for each signed-in Firebase user. Use the workspaces to move between request creation, provider bidding, and award selection.
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
+      {isAuthenticated && <AuthStatusCard />}
 
       <Box>
         <Stack spacing={1} sx={{ mb: 2 }}>
