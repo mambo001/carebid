@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Alert,
-  Box,
   Button,
   Card,
   CardContent,
@@ -18,7 +17,6 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { formatDistanceToNow, formatDistanceToNowStrict } from "date-fns";
 
 import {
   useAcceptBidMutation,
@@ -81,56 +79,58 @@ export function RequestRoomPage() {
 
   return (
     <Stack spacing={3}>
+      <Stack spacing={1.5}>
+        <Typography variant="overline" color="primary.main">
+          Live request room
+        </Typography>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography variant="h2">{request?.title ?? "Request room"}</Typography>
+          {request && (
+            <Stack direction="row" spacing={1}>
+              <Chip
+                label={status}
+                color={request._tag === "OpenRequest" ? "success" : "default"}
+                variant={request._tag === "DraftRequest" ? "outlined" : "filled"}
+                size="small"
+              />
+              {request._tag === "AwardedRequest" && (
+                <Chip label="Awarded" color="success" size="small" />
+              )}
+            </Stack>
+          )}
+        </Stack>
+      </Stack>
+
       <Card elevation={0}>
         <CardContent>
-          <Stack spacing={1.5}>
-            <Typography variant="overline" color="primary.main">
-              Live request room
-            </Typography>
-            <Typography variant="h2">{request?.title ?? "Request room"}</Typography>
-            {request && (
-              <Stack direction="row" spacing={1}>
-                <Chip
-                  label={status}
-                  color={request._tag === "OpenRequest" ? "success" : "default"}
-                  variant={request._tag === "DraftRequest" ? "outlined" : "filled"}
-                />
-                {request._tag === "AwardedRequest" && (
-                  <Chip label="Awarded" color="success" />
-                )}
-              </Stack>
+          <Stack spacing={2}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="h3">Workspace</Typography>
+              <ToggleButtonGroup
+                exclusive
+                value={workspace}
+                size="small"
+                onChange={(_, nextWorkspace: RoomWorkspace | null) => {
+                  if (nextWorkspace) {
+                    setWorkspace(nextWorkspace);
+                  }
+                }}
+                aria-label="Room workspace"
+              >
+                <ToggleButton value="patient">Patient</ToggleButton>
+                <ToggleButton value="provider">Provider</ToggleButton>
+              </ToggleButtonGroup>
+            </Stack>
+            {controls?.canOpenRequest && (
+              <Button
+                variant="contained"
+                disabled={openRequest.isPending}
+                onClick={() => openRequest.mutate(requestId)}
+                size="small"
+              >
+                {openRequest.isPending ? "Opening..." : "Open for bidding"}
+              </Button>
             )}
-          </Stack>
-        </CardContent>
-      </Card>
-
-      <Alert severity="info">
-        This room streams fresh snapshots from the backend. The workspace switch is demo-only and does not change your account.
-      </Alert>
-
-      <Card elevation={0}>
-        <CardContent>
-          <Stack spacing={1.5}>
-            <Typography variant="h2">
-              Demo workspace
-            </Typography>
-            <Typography color="text.secondary">
-              Switch how this room is rendered without changing backend session
-              state.
-            </Typography>
-            <ToggleButtonGroup
-              exclusive
-              value={workspace}
-              onChange={(_, nextWorkspace: RoomWorkspace | null) => {
-                if (nextWorkspace) {
-                  setWorkspace(nextWorkspace);
-                }
-              }}
-              aria-label="Room workspace"
-            >
-              <ToggleButton value="patient">Patient</ToggleButton>
-              <ToggleButton value="provider">Provider</ToggleButton>
-            </ToggleButtonGroup>
           </Stack>
         </CardContent>
       </Card>
@@ -138,14 +138,10 @@ export function RequestRoomPage() {
       <Card elevation={0}>
         <CardContent>
           <Stack spacing={2}>
-            <Typography variant="h2">
-              Current leaderboard
+            <Typography variant="h3">
+              {bids.length > 0 ? "Bids" : "No bids yet"}
             </Typography>
-            {request && (
-              <Typography color="text.secondary">{request.title}</Typography>
-            )}
-            <Divider />
-            {roomQuery.isLoading && <Skeleton variant="rounded" height={180} />}
+            {roomQuery.isLoading && <Skeleton variant="rounded" height={120} />}
             <List disablePadding>
               {bids.map((entry, index) => (
                 <ListItem
@@ -160,7 +156,7 @@ export function RequestRoomPage() {
                   }}
                 >
                   <ListItemText
-                    primary={`${index + 1}. ${formatProviderDisplayName(entry.providerDisplayName)}`}
+                    primary={formatProviderDisplayName(entry.providerDisplayName)}
                     secondary={
                       <Stack component="span" spacing={0.5} direction="row" flexWrap="wrap" useFlexGap>
                         <Typography component="span" variant="body2" color="text.secondary">
@@ -175,16 +171,16 @@ export function RequestRoomPage() {
                     }
                   />
                   <Stack
-                    direction={{ xs: "column", md: "row" }}
+                    direction="row"
                     spacing={1}
-                    alignItems={{ md: "center" }}
+                    alignItems="center"
                   >
                     <Typography fontWeight={900} color="primary.main">
                       {formatBidAmount(entry.amount)}
                     </Typography>
                     {request?._tag === "AwardedRequest" &&
                       request.awardedBidId === entry.id && (
-                        <Chip label="Accepted" color="success" />
+                        <Chip label="Accepted" color="success" size="small" />
                       )}
                     {controls?.canAcceptBid && (
                       <Button
@@ -200,20 +196,11 @@ export function RequestRoomPage() {
                 </ListItem>
               ))}
             </List>
-            {roomQuery.isSuccess && bids.length === 0 && (
-              <Alert severity="warning">No bids in this room yet.</Alert>
-            )}
 
-            {controls?.canOpenRequest && (
-              <Button
-                variant="contained"
-                disabled={openRequest.isPending}
-                onClick={() => openRequest.mutate(requestId)}
-              >
-                {openRequest.isPending
-                  ? "Opening..."
-                  : "Open request for bidding"}
-              </Button>
+            {roomQuery.isSuccess && bids.length === 0 && (
+              <Typography color="text.secondary" variant="body2">
+                Bids will appear here once providers respond.
+              </Typography>
             )}
           </Stack>
         </CardContent>

@@ -35,17 +35,10 @@ export function ProviderBidCard({
   return (
     <Card elevation={0}>
       <CardContent>
-        <Stack spacing={3}>
-          <div>
-            <Typography variant="h2">
-              {existingBid ? "Update provider bid" : "Provider bid controls"}
-            </Typography>
-            <Typography color="text.secondary">
-              {existingBid
-                ? "You already submitted a bid for this request. Editing this form updates that bid."
-                : "Bids are submitted via the Effect-based API and streamed in real-time via server-sent events."}
-            </Typography>
-          </div>
+        <Stack spacing={2.5}>
+          <Typography variant="h2">
+            {existingBid ? "Update your bid" : "Place a bid"}
+          </Typography>
 
           <Form<ProviderBidFormValues>
             initialValues={initialValues}
@@ -56,7 +49,7 @@ export function ProviderBidCard({
               <form onSubmit={handleSubmit} noValidate>
                 <Stack spacing={2}>
                   {placeBid.isSuccess && (
-                    <Alert severity="success">Bid saved to the room.</Alert>
+                    <Alert severity="success">Bid saved.</Alert>
                   )}
 
                   <TextField
@@ -88,7 +81,7 @@ export function ProviderBidCard({
                     disabled={submitting || placeBid.isPending}
                   >
                     {placeBid.isPending
-                      ? "Saving bid..."
+                      ? "Saving..."
                       : existingBid
                         ? "Update bid"
                         : "Place bid"}
