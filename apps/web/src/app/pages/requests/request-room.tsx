@@ -82,26 +82,21 @@ export function RequestRoomPage() {
   return (
     <Stack spacing={3}>
       <Card elevation={0}>
-        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-          <Stack spacing={2}>
-            <Box>
-              <Typography variant="overline" color="primary.main">
-                Live request room
-              </Typography>
-              <Typography variant="h2">{request?.title ?? "Request room"}</Typography>
-              <Typography color="text.secondary">Request ID: {requestId}</Typography>
-            </Box>
+        <CardContent>
+          <Stack spacing={1.5}>
+            <Typography variant="overline" color="primary.main">
+              Live request room
+            </Typography>
+            <Typography variant="h2">{request?.title ?? "Request room"}</Typography>
             {request && (
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+              <Stack direction="row" spacing={1}>
                 <Chip
-                  label={`Status: ${status}`}
+                  label={status}
                   color={request._tag === "OpenRequest" ? "success" : "default"}
                   variant={request._tag === "DraftRequest" ? "outlined" : "filled"}
-                  sx={{ alignSelf: "start" }}
                 />
-                <Chip label="SSE live updates" color="secondary" variant="outlined" sx={{ alignSelf: "start" }} />
                 {request._tag === "AwardedRequest" && (
-                  <Chip label={`Awarded bid: ${request.awardedBidId}`} color="success" sx={{ alignSelf: "start" }} />
+                  <Chip label="Awarded" color="success" />
                 )}
               </Stack>
             )}
