@@ -7,35 +7,28 @@ import {
   MenuItem,
   Stack,
   Typography,
-} from "@mui/material";
-import { Form } from "react-final-form";
-import { Select, TextField } from "mui-rff";
+} from "@mui/material"
+import { Form } from "react-final-form"
+import { Select, TextField } from "mui-rff"
 
-import { useCreateRequestMutation } from "../../../lib/queries";
+import { useCreateRequestMutation } from "../../../lib/queries"
 import {
   createInitialRequestValues,
   requestCategoryOptions,
   type RequestFormValues,
-} from "../../../lib/request-form";
+} from "../../../lib/request-form"
 
-const required = (value: unknown) => (value ? undefined : "Required");
+const required = (value: unknown) => (value ? undefined : "Required")
 
 export function PatientRequestFormCard() {
-  const createRequest = useCreateRequestMutation();
-  const initialValues = createInitialRequestValues();
+  const createRequest = useCreateRequestMutation()
+  const initialValues = createInitialRequestValues()
 
   return (
     <Card elevation={0}>
       <CardContent>
-        <Stack spacing={3}>
-          <div>
-            <Typography variant="h2">
-              Create request
-            </Typography>
-            <Typography color="text.secondary">
-              Start a request and persist it into the backend workflow.
-            </Typography>
-          </div>
+        <Stack spacing={2.5}>
+          <Typography variant="h2">Create request</Typography>
 
           <Form<RequestFormValues>
             initialValues={initialValues}
@@ -44,15 +37,15 @@ export function PatientRequestFormCard() {
                 title: values.title,
                 description: values.sanitizedSummary,
                 category: values.category,
-              });
+              })
             }}
             render={({ handleSubmit, submitting }) => {
               return (
                 <form onSubmit={handleSubmit} noValidate>
-                  <Stack spacing={2.5}>
+                  <Stack spacing={2}>
                     {createRequest.isSuccess && (
                       <Alert severity="success">
-                        Request created and added to the dashboard list.
+                        Request created.
                       </Alert>
                     )}
 
@@ -82,11 +75,11 @@ export function PatientRequestFormCard() {
 
                     <TextField
                       name="sanitizedSummary"
-                      label="Sanitized summary"
+                      label="Description"
                       required
                       fieldProps={{ validate: required }}
                       multiline
-                      minRows={4}
+                      minRows={3}
                     />
 
                     <Button
@@ -95,17 +88,15 @@ export function PatientRequestFormCard() {
                       size="large"
                       disabled={submitting || createRequest.isPending}
                     >
-                      {createRequest.isPending
-                        ? "Saving request..."
-                        : "Create request"}
+                      {createRequest.isPending ? "Saving..." : "Create request"}
                     </Button>
                   </Stack>
                 </form>
-              );
+              )
             }}
           />
         </Stack>
       </CardContent>
     </Card>
-  );
+  )
 }
