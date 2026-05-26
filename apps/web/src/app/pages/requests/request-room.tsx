@@ -38,7 +38,10 @@ import {
 const requestStatus = (tag: string) => tag.replace("Request", "").toLowerCase();
 
 const formatETADate = (dateString: string) => {
-  return formatDistanceToNowStrict(new Date(dateString), { addSuffix: true });
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 };
 
 const formatProviderDisplayName = (displayName: string) => {
@@ -163,7 +166,18 @@ export function RequestRoomPage() {
                 >
                   <ListItemText
                     primary={`${index + 1}. ${formatProviderDisplayName(entry.providerDisplayName)}`}
-                    secondary={`ETA: ${formatETADate(entry.availableDate)}${entry.notes ? ` · ${entry.notes}` : ""}`}
+                    secondary={
+                      <Stack component="span" spacing={0.5} direction="row" flexWrap="wrap" useFlexGap>
+                        <Typography component="span" variant="body2" color="text.secondary">
+                          Available {formatETADate(entry.availableDate)}
+                        </Typography>
+                        {entry.notes && (
+                          <Typography component="span" variant="body2" color="text.secondary">
+                            &middot; {entry.notes}
+                          </Typography>
+                        )}
+                      </Stack>
+                    }
                   />
                   <Stack
                     direction={{ xs: "column", md: "row" }}
