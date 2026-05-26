@@ -20,24 +20,36 @@ export function AppBar() {
   return (
     <MuiAppBar position="sticky" color="inherit" elevation={0}>
       <Toolbar sx={{ justifyContent: "space-between", py: 1 }}>
-        <Typography variant="h6" fontWeight={800} color="primary.main">
+        <Typography variant="h6" fontWeight={900} color="primary.main" letterSpacing="-0.04em">
           {APP_NAME}
         </Typography>
 
         <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1 }}>
           <Stack direction="row" spacing={1}>
             {primaryNavigation.map((item) => (
-              <Button key={item.to} component={NavLink} to={item.to} color="inherit">
+              <Button
+                key={item.to}
+                component={NavLink}
+                to={item.to}
+                color="inherit"
+                sx={{
+                  color: "text.secondary",
+                  "&.active": {
+                    bgcolor: "info.main",
+                    color: "primary.main",
+                  },
+                }}
+              >
                 {item.label}
               </Button>
             ))}
           </Stack>
           {authUser ? (
-            <Button color="inherit" onClick={handleSignOut} size="small">
+            <Button color="primary" onClick={handleSignOut} size="small" variant="outlined">
               Sign out
             </Button>
           ) : (
-            <Button component={NavLink} to="/sign-in" color="inherit" size="small">
+            <Button component={NavLink} to="/sign-in" color="primary" size="small" variant="contained">
               Sign in
             </Button>
           )}

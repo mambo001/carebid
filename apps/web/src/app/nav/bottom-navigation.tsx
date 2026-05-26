@@ -31,6 +31,7 @@ export function BottomNavigation() {
         bottom: 0,
         borderTop: 1,
         borderColor: "divider",
+        bgcolor: "background.paper",
         display: { xs: "block", md: "none" },
       }}
     >

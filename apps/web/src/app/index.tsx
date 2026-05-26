@@ -55,7 +55,7 @@ function AppLayout() {
       }}
     >
       <AppBar />
-      <Container maxWidth="lg" sx={{ flex: 1, py: 4 }}>
+      <Container maxWidth="lg" sx={{ flex: 1, py: { xs: 3, md: 5 } }}>
         <Outlet />
       </Container>
       <BottomNavigation />

@@ -1,85 +1,101 @@
 import { alpha, createTheme } from "@mui/material/styles";
 
-const navy = "#355872";
-const sky = "#7AAACE";
-const mist = "#9CD5FF";
-const canvas = "#F7F8F0";
+const ink = "#022B3A";
+const teal = "#1F7A8C";
+const ice = "#BFDBF7";
+const mist = "#E1E5F2";
+const white = "#FFFFFF";
 
 export const appTheme = createTheme({
   palette: {
     mode: "light",
     primary: {
-      main: navy,
-      light: sky,
+      main: ink,
+      light: teal,
     },
     secondary: {
-      main: sky,
+      main: teal,
     },
     info: {
-      main: mist,
+      main: ice,
     },
     success: {
-      main: "#5B8C5A",
+      main: "#247A4D",
     },
     warning: {
-      main: "#C68A2D",
+      main: "#B7791F",
     },
     error: {
-      main: "#C05A50",
+      main: "#B42318",
     },
     background: {
-      default: canvas,
-      paper: "#FFFFFF",
+      default: mist,
+      paper: white,
     },
     text: {
-      primary: navy,
-      secondary: alpha(navy, 0.75),
+      primary: ink,
+      secondary: alpha(ink, 0.72),
     },
-    divider: alpha(navy, 0.1),
+    divider: alpha(ink, 0.12),
   },
   typography: {
+    fontFamily:
+      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     h1: {
-      fontSize: "2.4rem",
-      fontWeight: 700,
-      lineHeight: 1.1,
+      fontSize: "clamp(2rem, 5vw, 3.6rem)",
+      fontWeight: 800,
+      letterSpacing: "-0.055em",
+      lineHeight: 0.96,
     },
     h2: {
-      fontSize: "1.45rem",
-      fontWeight: 700,
+      fontSize: "1.2rem",
+      fontWeight: 800,
     },
     h3: {
-      fontSize: "1.05rem",
-      fontWeight: 700,
+      fontSize: "1rem",
+      fontWeight: 800,
     },
     overline: {
-      fontWeight: 700,
-      letterSpacing: "0.14em",
+      fontWeight: 800,
+      letterSpacing: "0.16em",
+    },
+    button: {
+      fontWeight: 800,
+      textTransform: "none",
     },
   },
   components: {
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          backgroundColor: canvas,
+          backgroundColor: mist,
         },
       },
     },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: alpha("#FFFFFF", 0.92),
-          color: navy,
+          backgroundColor: white,
+          color: ink,
           boxShadow: "none",
-          borderBottom: `1px solid ${alpha(navy, 0.1)}`,
-          backdropFilter: "blur(10px)",
+          borderBottom: `1px solid ${alpha(ink, 0.1)}`,
         },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          boxShadow: "0 10px 30px rgba(53, 88, 114, 0.08)",
-          border: `1px solid ${alpha(navy, 0.08)}`,
+          backgroundImage: "none",
+          border: `1px solid ${alpha(ink, 0.1)}`,
+          boxShadow: `0 12px 32px ${alpha(ink, 0.08)}`,
+          overflow: "hidden",
+        },
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          border: `1px solid ${alpha(ink, 0.08)}`,
           backgroundImage: "none",
         },
       },
@@ -90,9 +106,6 @@ export const appTheme = createTheme({
       },
       styleOverrides: {
         root: {
-          borderRadius: 999,
-          textTransform: "none",
-          fontWeight: 700,
           paddingInline: 18,
         },
       },
@@ -100,14 +113,14 @@ export const appTheme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          backgroundColor: alpha("#FFFFFF", 0.94),
+          backgroundColor: white,
         },
       },
     },
     MuiChip: {
       styleOverrides: {
         root: {
-          fontWeight: 700,
+          fontWeight: 800,
         },
       },
     },
